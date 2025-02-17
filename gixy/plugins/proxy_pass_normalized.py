@@ -14,7 +14,7 @@ class proxy_pass_normalized(Plugin):
 
     summary = 'Detect path after host in proxy_pass (potential URL decoding issue)'
     severity = gixy.severity.MEDIUM
-    description = ("A slash immediately after the host in proxy_pass leads to the path being decoded and normalized before proxying downstream, leading to unexpected behavior related to encoded slashes.")
+    description = ("A path (beginning with a slash) after the host in proxy_pass leads to the path being decoded and normalized before proxying downstream, leading to unexpected behavior related to encoded slashes like %2F..%2F. Likewise, the usage of 'rewrite ^ $request_uri;' without using '$1' or '$uri' (or another captured group) in the path of proxy_pass leads to double-encoding of paths.")
     help_url = 'https://joshua.hu/proxy-pass-nginx-decoding-normalizing-url-path-dangerous#nginx-proxy_pass'
     directives = ['proxy_pass']
 
@@ -24,6 +24,8 @@ class proxy_pass_normalized(Plugin):
 
     def audit(self, directive):
         proxy_pass_args = directive.args
+        rewrite_fail = False
+        num_pattern = r'\$\d+'
 
         if not proxy_pass_args:
             return
@@ -33,20 +35,34 @@ class proxy_pass_normalized(Plugin):
         if not parsed:
             return
 
-        if not parsed.group('path'):
-            return
-
-
         for rewrite in directive.find_directives_in_scope("rewrite"):
             if hasattr(rewrite, 'pattern') and hasattr(rewrite, 'replace'):
                 if rewrite.pattern == '^' and rewrite.replace == '$request_uri':
-                    return
+                    if parsed.group('path'):
+                        match = re.search(num_pattern, parsed.group('path'))
+                        if match or '$uri' in parsed.group('path'):
+                            return
+                        else:
+                            rewrite_fail = True
+                            break
+                    else:
+                        if not parsed.group('host'):
+                            return # ?!
+                        match = re.search(num_pattern, parsed.group('host'))
+                        if match or '$uri' in parsed.group('host'):
+                            return
+                        else:
+                            rewrite_fail = True
+                            break
+
+        if not parsed.group('path') and not rewrite_fail:
+            return
 
         self.add_issue(
             severity=self.severity,
             directive=[directive, directive.parent],
             reason=(
-                "Found a slash (and possibly more) after the hostname in proxy_pass, without using $request_uri."
-                "This can lead to path decoding issues."
+                "Found a path after the host in proxy_pass, without using $request_uri and a variable (such as $1 or $uri). "
+                "This can lead to path decoding issues or double-encoding issues."
             )
         )
