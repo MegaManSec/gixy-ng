@@ -6,7 +6,7 @@ class version_disclosure(Plugin):
     """
     Syntax for the directive: server_tokens off;
     """
-    summary = 'Do not enable server_tokens on or server_tokend build'
+    summary = 'Do not enable server_tokens on or server_tokens build'
     severity = gixy.severity.HIGH
     description = ("Using server_tokens on; or server_tokens build;  allows an "
                    "attacker to learn the version of NGINX you are running, which can "
