@@ -32,8 +32,8 @@ class proxy_pass_normalized(Plugin):
         if not proxy_pass_args:
             return
 
-        if proxy_pass_args[0].startswith("$"):
-            # If proxy pass destination is defined by a variable, it is not possible to check for path normalization issues
+        if proxy_pass_args[0].startswith("$") and '/' not in proxy_pass_args[0]:
+            # If proxy pass destination is defined by only a variable, it is not possible to check for path normalization issues
             return
 
         parsed = urlparse(proxy_pass_args[0])
