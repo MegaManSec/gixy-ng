@@ -33,6 +33,7 @@ Right now Gixy can find:
 *   [[resolver_external] Using external DNS nameservers](https://blog.zorinaq.com/nginx-resolver-vulns/)
 *   [[version_disclosure] Using insecure values for server_tokens](en/plugins/version_disclosure.md)
 *   [[proxy_pass_normalized] Using proxy_pass with a pathname will normalize and decode the requested path when proxying](https://joshua.hu/proxy-pass-nginx-decoding-normalizing-url-path-dangerous#nginx-proxy_pass)
+*   [[regex_redos] Regular expressions may result in easy denial-of-service (ReDoS) attacks](https://joshua.hu/regex-redos-recheck-nginx-gixy)
 
 You can find things that Gixy is learning to detect at [Issues labeled with "new plugin"](https://github.com/dvershinin/gixy/issues?q=is%3Aissue+is%3Aopen+label%3A%22new+plugin%22)
 

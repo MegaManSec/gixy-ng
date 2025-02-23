@@ -9,7 +9,7 @@ GIXY
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/dvershinin/gixy.svg?style=flat-square)](https://github.com/dvershinin/gixy/pulls)
 
 > [!TIP]
-> This is an **actively maintained fork** of the original [Gixy](https://github.com/yandex/gixy) project by **Yandex LLC**.  
+> This is an **actively maintained fork** of the original [Gixy](https://github.com/yandex/gixy) project by **Yandex LLC**.
 
 # Overview
 <img align="right" width="192" height="192" src="docs/gixy.png">
@@ -43,6 +43,7 @@ Right now Gixy can find:
 *   [[worker_rlimit_nofile_vs_connections] `worker_rlimit_nofile` must be at least twice `worker_connections`](https://gixy.getpagespeed.com/en/plugins/worker_rlimit_nofile_vs_connections/)
 *   [[error_log_off] `error_log` set to `off`](https://gixy.getpagespeed.com/en/plugins/error_log_off/)
 *   [[unanchored_regex] Regular expression without anchors](https://gixy.getpagespeed.com/en/plugins/unanchored_regex/)
+*   [[regex_redos] Regular expressions may result in easy denial-of-service (ReDoS) attacks](https://joshua.hu/regex-redos-recheck-nginx-gixy)
 
 You can find things that Gixy is learning to detect at [Issues labeled with "new plugin"](https://github.com/dvershinin/gixy/issues?q=is%3Aissue+is%3Aopen+label%3A%22new+plugin%22)
 

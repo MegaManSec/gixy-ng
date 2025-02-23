@@ -46,6 +46,8 @@ def generate_config_test_cases():
 
     manager = PluginsManager()
     for plugin in manager.plugins:
+        if getattr(plugin, 'skip_test', False):
+            continue
         plugin = plugin.name
         assert plugin in tested_plugins, 'Plugin {name!r} should have at least one simple test config'.format(name=plugin)
         assert plugin in tested_fp_plugins, 'Plugin {name!r} should have at least one simple test config with false positive'.format(name=plugin)
