@@ -1,4 +1,4 @@
-# [valid_referers] none in valid_referers
+# [valid_referrers] none in valid_referrers
 Module [ngx_http_referer_module](http://nginx.org/en/docs/http/ngx_http_referer_module.html) allows to block the access to service for requests with wrong `Referer` value.
 It's often used for setting `X-Frame-Options` header (ClickJacking protection), but there may be other cases.
 
@@ -20,4 +20,4 @@ E.g.:
   - by setting up the [Referrer Policy](https://www.w3.org/TR/referrer-policy/);
   - a request with opaque origin, `data:` scheme, for example.
 
-So, by using `none` as a valid referer, you nullify any attemps in refferer validation.
+So, by using `none` as a valid referer, you nullify any attempts in refferer validation.

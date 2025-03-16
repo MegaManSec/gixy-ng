@@ -1,6 +1,6 @@
 # [unanchored_regex]: Regular expression without anchors
 
-In NGINX, when definining location with regular expression, it's recommended to anchor the regex at least to the beginning or end of the string. 
+In NGINX, when defining location with regular expression, it's recommended to anchor the regex at least to the beginning or end of the string. 
 Otherwise, the regex will match any part of the string, which may lead to unexpected behavior or decreased performance.
 
 For example, the following location block will match any URL that contains `/v1/`:

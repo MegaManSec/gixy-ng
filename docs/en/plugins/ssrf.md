@@ -33,9 +33,9 @@ location ~* ^/internal-proxy/(?<proxy_proto>https?)/(?<proxy_host>.*?)/(?<proxy_
 ```
 
 According to Nginx docs, internal requests are the following:
->  - requests redirected by the **error_page**, index, random_index, and **try_files** directives;
+>  - requests are redirected by the **error_page**, index, random_index, and **try_files** directives;
 >  - requests redirected by the “X-Accel-Redirect” response header field from an upstream server;
->  - subrequests formed by the “include virtual” command of the ngx_http_ssi_module module and by the ngx_http_addition_module module directives;
+>  - sub-requests formed by the “include virtual” command of the `ngx_http_ssi_module` module and by the ngx_http_addition_module module directives;
 >  - requests changed by the **rewrite** directive
 
 Accordingly, any unsafe rewrite allows an attacker to make an internal request and control a proxied server's address.
@@ -58,4 +58,4 @@ There are several rules you better follow when writing such configurations:
   - if possible, forbid user data transmission;
   - protect proxied server's address:
     * if the quantity of proxied hosts is limited (when you have S3 or smth), you better hardcode them and choose them with `map` or do it some other way;
-    * if you can' list all possible hosts to proxy, you should sign the address.
+    * if you can't list all possible hosts to proxy, you should sign the address.

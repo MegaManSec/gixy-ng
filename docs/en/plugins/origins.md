@@ -1,7 +1,7 @@
 # [origins] Problems with referrer/origin validation
 
 It's not unusual to use regex for `Referer` or `Origin` headers validation.
-Often it is needed for setting the `X-Frame-Options` header (ClickJacking protection) or Cross-Origin Resource Sharing.
+It is often necessary for setting the `X-Frame-Options` header (ClickJacking protection) or Cross-Origin Resource Sharing.
 
 The most common errors with this configuration are:
   - regex errors;

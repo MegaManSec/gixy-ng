@@ -12,7 +12,7 @@ The only 100% safe things which may be done inside if in a location context are:
 
 Anything else may cause unpredictable behavior, including potential SIGSEGV.
 
-It is important to note that the behavior of if is not inconsistent, given two identical requests it will not randomly fail on one and work on the other, with proper testing and understanding ifs '''can''' be used. The advice to use other directives where available still very much applies, though.
+It is important to note that the behavior of if is not inconsistent, given two identical requests it will not randomly fail on one and work on the other, with proper testing and understanding ifs _can_ be used. The advice to use other directives where available still very much applies, though.
 
 There are cases where you cannot avoid using an if, for example, if you need to test a variable which has no equivalent directive.
 

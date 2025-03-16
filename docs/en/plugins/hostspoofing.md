@@ -1,7 +1,7 @@
 # [host_spoofing] Request's Host header forgery
 
 Often, an application located behind Nginx needs a correct `Host` header for URL generation (redirects, resources, links in emails etc.).
-Spoofing of this header, may leads to a variety of problems, from phishing to SSRF.
+Spoofing of this header may lead to a variety of problems, from phishing to SSRF.
 
 > Notice: your application may also use the `X-Forwarded-Host` request header for this functionality.
 > In this case you have to ensure the header is set correctly;

@@ -7,7 +7,7 @@ location /i/ {
     alias /data/w3/images/;
 }
 ```
-на запрос `/i/top.gif` будет отдан файл `/data/w3/images/top.gif`.
+На запрос `/i/top.gif` будет отдан файл `/data/w3/images/top.gif`.
 
 Однако, если локейшен не оканчивается разделителем директорий (`/`):
 ```nginx
@@ -15,7 +15,7 @@ location /i {
     alias /data/w3/images/;
 }
 ```
-то на запрос `/i../app/config.py` будет отдан файл `/data/w3/app/config.py`.
+То на запрос `/i../app/config.py` будет отдан файл `/data/w3/app/config.py`.
 
 Иными словами, не корректная конфигурация `alias` может позволить злоумышленнику прочесть файл за пределами целевой директории.
 

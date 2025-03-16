@@ -7,7 +7,7 @@ GIXY
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/dvershinin/gixy.svg?style=flat-square)](https://github.com/dvershinin/gixy/pulls)
 
 # Overview
-<img align="right" width="192" height="192" src="gixy.png">
+<img style="float: right;" width="192" height="192" src="gixy.png" alt="Gixy logo">
 
 Gixy is a tool to analyze Nginx configuration.
 The main goal of Gixy is to prevent security misconfiguration and automate flaw detection.
@@ -24,7 +24,7 @@ Right now Gixy can find:
 *   [[origins] Problems with referrer/origin validation](en/plugins/origins.md)
 *   [[add_header_redefinition] Redefining of response headers by  "add_header" directive](en/plugins/addheaderredefinition.md)
 *   [[host_spoofing] Request's Host header forgery](en/plugins/hostspoofing.md)
-*   [[valid_referers] none in valid_referers](en/plugins/validreferers.md)
+*   [[valid_referrers] none in valid_referers](en/plugins/validreferers.md)
 *   [[add_header_multiline] Multiline response headers](en/plugins/addheadermultiline.md)
 *   [[alias_traversal] Path traversal via misconfigured alias](en/plugins/aliastraversal.md)
 *   [[if_is_evil] If is evil when used in location context](en/plugins/if_is_evil.md)
@@ -150,4 +150,4 @@ Contributions to Gixy are always welcome! You can help us in different ways:
 
 Code guidelines:
   * Python code style should follow [pep8](https://www.python.org/dev/peps/pep-0008/) standards whenever possible;
-  * Pull requests with new plugins must have unit tests for it.
+  * Pull requests with new plugins must have unit tests for them.

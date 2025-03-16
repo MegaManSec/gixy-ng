@@ -7,7 +7,7 @@ location /i/ {
     alias /data/w3/images/;
 }
 ```
-on request of `/i/top.gif`, the file `/data/w3/images/top.gif` will be sent.
+On request of `/i/top.gif`, the file `/data/w3/images/top.gif` will be sent.
 
 But if the location doesn't end with directory separator (i.e. `/`):
 
@@ -25,4 +25,4 @@ In other words, the incorrect configuration of `alias` could allow an attacker t
 It's pretty simple:
   - you must find all the `alias` directives;
   - make sure that the parent prefixed location ends with directory separator.
-  - or if you want to map a single file make sure the location starts with a `=`, e.g `=/i.gif` instead of `/i.gif`.
+  - or if you want to map a single file make sure the location starts with a `=`, e.g. `=/i.gif` instead of `/i.gif`.
