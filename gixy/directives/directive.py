@@ -107,7 +107,7 @@ class MoreSetHeadersDirective(Directive):
                 # Now it's a header in format "Header: value" or "Header:" or just "Header" (for clearing)
                 parts = arg.split(":", 1)
                 header = parts[0]
-                value = None
+                value = ""
                 if len(parts) > 1 and parts[1].strip():
                     # strip only whitespace character from left side, preserving newlines
                     # this is needed to support multiline headers
