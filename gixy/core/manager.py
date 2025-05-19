@@ -4,6 +4,7 @@ import logging
 import gixy
 from gixy.core.plugins_manager import PluginsManager
 from gixy.core.context import get_context, pop_context, push_context, purge_context
+from gixy.directives.directive import MapDirective
 from gixy.parser.nginx_parser import NginxParser
 from gixy.core.config import Config
 from gixy.core import builtin_variables as builtins
@@ -71,7 +72,7 @@ class Manager(object):
 
         context = get_context()
         for var in directive.variables:
-            if var.name == 0:
+            if var.name == 0 and not isinstance(directive, MapDirective):
                 # All regexps must clean indexed variables
                 context.clear_index_vars()
             context.add_var(var.name, var)

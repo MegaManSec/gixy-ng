@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import gixy
 from gixy.directives import block
+from gixy.directives.block import MapBlock, GeoBlock
 
 
 class BaseFormatter(object):
@@ -44,6 +45,14 @@ class BaseFormatter(object):
                 reason=issue.reason or '',
             )
             key = ''.join(report.values())
+            expanded_directives = []
+            if any(isinstance(value, (MapBlock, GeoBlock)) for value in issue.directives):
+                for value in issue.directives:
+                    if isinstance(value, (MapBlock, GeoBlock)):
+                        expanded_directives.extend(value.children)
+                    else:
+                        expanded_directives.append(value)
+                issue.directives = expanded_directives
             report['directives'] = issue.directives
             if key in result:
                 result[key]['directives'].extend(report['directives'])

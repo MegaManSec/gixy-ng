@@ -3,7 +3,6 @@
 from gixy.core.variable import Variable
 from gixy.core.regexp import Regexp
 
-
 def get_overrides():
     """Get a list of all directives that override the default behavior"""
     result = {}
@@ -132,7 +131,7 @@ class SetDirective(Directive):
 
     def __init__(self, name, args):
         super(SetDirective, self).__init__(name, args)
-        self.variable = args[0].strip("$")
+        self.variable = args[0].lstrip("$")
         self.value = args[1]
 
     @property
@@ -146,7 +145,7 @@ class AuthRequestSetDirective(Directive):
 
     def __init__(self, name, args):
         super().__init__(name, args)
-        self.variable = args[0].strip("$")
+        self.variable = args[0].lstrip("$")
         self.value = args[1]
 
     @property
@@ -162,7 +161,7 @@ class PerlSetDirective(Directive):
 
     def __init__(self, name, args):
         super().__init__(name, args)
-        self.variable = args[0].strip("$")
+        self.variable = args[0].lstrip("$")
         self.value = args[1]
 
     @property
@@ -176,7 +175,7 @@ class SetByLuaDirective(Directive):
 
     def __init__(self, name, args):
         super().__init__(name, args)
-        self.variable = args[0].strip("$")
+        self.variable = args[0].lstrip("$")
         self.value = args[1]
 
     @property
@@ -298,3 +297,68 @@ class ResolverDirective(Directive):
 
             external_nameservers.append(addr)
         return external_nameservers
+
+class MapDirective(Directive):
+    """
+    map $source $destination {
+        default value; <- this part
+        key     value; <- this part
+    }
+
+    geo [$remote_addr] $destination {
+      default        ZZ;
+      include        conf/geo.conf; <-- this part.
+      delete         127.0.0.0/16; <-- this part.
+      proxy          192.168.100.0/24; <-- this part.
+      proxy          2001:0db8::/32; <-- this part.
+      key            value; <-- this part.
+    }
+    """
+
+    nginx_name = "map" # XXX: Also used for "geo". Could also work for "charset_map"
+    provide_variables = True
+
+    def __init__(self, source, destination):
+        super().__init__(source, destination)
+        self.src_val = source
+        self.dest_val = destination[0] if destination and len(destination) == 1 else None
+        self.regex = None
+
+        if self.is_regex:
+            if self.src_val.startswith('~*'):
+                pattern = self.src_val[2:]
+                cs = False
+            else:
+                pattern = self.src_val[1:]
+                cs = True
+            self.regex = Regexp(pattern, case_sensitive=cs)
+
+    def __str__(self):
+        map_str = self.src_val
+        if self.dest_val:
+            map_str += f" {self.dest_val}"
+        map_str += ";"
+        return map_str
+
+    @property
+    def is_regex(self):
+        return self.src_val.startswith("~")
+
+    @property
+    def variables(self):
+        if not self.regex:
+            return []
+
+        ancestor = self.parent
+        while ancestor is not None and ancestor.nginx_name != 'map': # XXX: Better to check isinstance(ancestor, MapBlock) but circular import..
+            ancestor = getattr(ancestor, 'parent', None)
+
+        if ancestor is None: # This happens for "geo" directives, which is ok because geo directive does not provide variables.
+            return []
+
+        result = []
+        for name, group in self.regex.groups.items():
+            result.append(
+                Variable(name=name, value=group, provider=self, boundary=None, ctx=self.src_val)
+            )
+        return result

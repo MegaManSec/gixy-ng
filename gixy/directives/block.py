@@ -3,7 +3,7 @@ try:
 except ImportError:
     from functools import cached_property
 
-from gixy.directives.directive import Directive
+from gixy.directives.directive import Directive, MapDirective
 from gixy.core.variable import Variable
 from gixy.core.regexp import Regexp
 
@@ -201,6 +201,13 @@ class IncludeBlock(Block):
 
 
 class MapBlock(Block):
+    """
+    map $source $destination { <- this part is the block
+        default value; <- this part is the directive, but MapBlock sets variables
+        key     value; <- this part is the directive, but MapBlock sets variables
+        ~*^re(.*)$ $1; <- this part is the directive, but MapBlock sets variables
+    } <- this part is the block
+    """
     nginx_name = "map"
     self_context = False
     provide_variables = True
@@ -208,23 +215,78 @@ class MapBlock(Block):
     def __init__(self, name, args):
         super(MapBlock, self).__init__(name, args)
         self.source = args[0]
-        self.variable = args[1].strip("$")
+        self.variable = args[1].lstrip("$") # XXX: Why do we strip here?
+
+    def gather_map_directives(self, nodes):
+        for node in nodes:
+            if isinstance(node, MapDirective):
+                yield node
+            elif isinstance(node, IncludeBlock):
+                yield from self.gather_map_directives(node.children)
 
     @cached_property
     def variables(self):
-        # TODO(buglloc): Finish him!
-        return [
-            Variable(
-                name=self.variable,
-                value="",
-                boundary=None,
-                provider=self,
-                have_script=False,
-            )
-        ]
+        vars = []
+        # final_source = Regexp(Variable(name="", value=self.source, provider=self).final_value)
+        for child in list(self.gather_map_directives(self.children)):
+            if not isinstance(child, MapDirective):
+                continue # XXX: Should never happen?
+            src_val = child.src_val
+            dest_val = child.dest_val
 
+            if not child.is_regex:
+                vars.append(
+                    Variable(
+                        name=src_val,
+                        value=dest_val,
+                        have_script=False,
+                        provider=child,
+                        ctx=src_val,
+                    )
+                )
+                continue
+
+            result = []
+            for name, group in child.regex.groups.items():
+                result.append(
+                    Variable(
+                        name=name, value=group, provider=child, boundary=None, ctx=src_val,
+                    )
+                )
+                break # Only need the first result (full expression)
+            if len(result) != 1:
+                continue
+            vars.append(
+                Variable(
+                    name=src_val,
+                    value=result[0].value, # Value is Regexp()
+                    boundary=None,
+                    provider=child,
+                    have_script=False,
+                    ctx=src_val,
+                ),
+            )
+
+        return [Variable(name=self.variable, value=vars, boundary=None, provider=self, have_script=False)]
+
+    def __str__(self):
+        mapblock_vars = []
+        for i in self.variables[0].value:
+            mapblock_vars.append(str(i.value))
+        return "{0} {1} ${2} {{".format(self.nginx_name, self.source, self.variable)
 
 class GeoBlock(Block):
+    """
+    geo [$remote_addr] $geo { <- this part
+      default        ZZ;
+      include        conf/geo.conf;
+      delete         127.0.0.0/16;
+      proxy          192.168.100.0/24;
+      proxy          2001:0db8::/32;
+      key            value;
+    } <- this part
+    """
+
     nginx_name = "geo"
     self_context = False
     provide_variables = True
@@ -233,22 +295,42 @@ class GeoBlock(Block):
         super(GeoBlock, self).__init__(name, args)
         if len(args) == 1:  # geo uses $remote_addr as default source of the value
             source = "$remote_addr"
-            variable = args[0].strip("$")
+            variable = args[0].lstrip("$") # XXX: Why do we strip here?
         else:
             source = args[0]
-            variable = args[1].strip("$")
+            variable = args[1].lstrip("$") # XXX: Why do we strip here?
         self.source = source
         self.variable = variable
 
+    def gather_geo_directives(self, nodes):
+        for node in nodes:
+            if isinstance(node, MapDirective):
+                yield node
+            elif isinstance(node, IncludeBlock):
+                yield from self.gather_geo_directives(node.children)
+
     @cached_property
     def variables(self):
-        # TODO(buglloc): Finish him! -- same as in MapBlock
-        return [
-            Variable(
-                name=self.variable,
-                value="",
-                boundary=None,
-                provider=self,
-                have_script=False,
+        vars = []
+        # final_source = Regexp(Variable(name="", value=self.source, provider=self).final_value)
+        for child in list(self.gather_geo_directives(self.children)):
+            src_val = child.src_val
+            dest_val = child.dest_val
+
+            vars.append(
+                Variable(
+                    name=src_val,
+                    value=dest_val,
+                    boundary=None,
+                    provider=child,
+                    have_script=False,
+                    ctx=src_val,
+                ),
             )
-        ]
+        return [Variable(name=self.variable, value=vars, boundary=None, provider=self, have_script=False)]
+
+    def __str__(self):
+        mapblock_vars = []
+        for i in self.variables[0].value:
+            mapblock_vars.append(str(i.value))
+        return "{0} {1} ${2} {{".format(self.nginx_name, self.source, self.variable)

@@ -58,5 +58,6 @@ class ssrf(Plugin):
                 # Yay! Our variable can contain any symbols!
                 reason = 'At least variable "${var}" can contain untrusted user input'.format(var=var.name)
                 self.add_issue(directive=[directive] + var.providers, reason=reason)
+
                 return True
         return False

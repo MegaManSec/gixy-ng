@@ -381,3 +381,6 @@ def builtin_var(name):
             return Variable(name=name, value=Regexp(regexp, strict=True, case_sensitive=False))
         return Variable(name=name, value='builtin', have_script=False)
     return None
+
+def fake_var(name):
+    return Variable(name=name, value=name, have_script=False)

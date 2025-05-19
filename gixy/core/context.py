@@ -2,6 +2,7 @@ import logging
 import copy
 
 from gixy.core.utils import is_indexed_name
+import gixy.core.builtin_variables as builtins
 
 LOG = logging.getLogger(__name__)
 
@@ -53,29 +54,37 @@ class Context(object):
         else:
             var_type = 'name'
 
-        self.variables[var_type][name] = var
+        key = (var.ctx, name) if var.ctx else name
+        self.variables[var_type][key] = var
         return self
 
-    def get_var(self, name):
+    def get_var(self, name, ctx=None):
         if is_indexed_name(name):
             var_type = 'index'
             name = int(name)
         else:
             var_type = 'name'
 
+        key = (ctx, name) if ctx else name
         result = None
         try:
-            result = self.variables[var_type][name]
+            result = self.variables[var_type][key]
         except KeyError:
             if var_type == 'name':
                 # Only named variables can be builtins
-                import gixy.core.builtin_variables as builtins
-
                 if builtins.is_builtin(name):
                     result = builtins.builtin_var(name)
 
         if not result:
-            LOG.info("Can't find variable '{0}'".format(name))
+            # We can try again if it's a MapDirective (ctx is set), because it may be another variable in the same http context
+            if ctx and var_type == 'name':
+                try:
+                    result = self.variables[var_type][name]
+                except KeyError:
+                    # It may actually be another variable outside of the same http context, but we have no way to traverse up and down all contexts.
+                    # So, just create a fake variable with the same name, and the caller can use compile_script during a second pass if it wants to resolve the variable.
+                    result = builtins.fake_var(name)
+
         return result
 
     def __deepcopy__(self, memo):
