@@ -544,6 +544,17 @@ def _parse(source, state):
             subpatternappend((ANY, None))
 
         elif this == "(":
+            # Check for PCRE-style (*...) extensions
+            if source.match("*"):
+                # Skip until we find a closing ')'
+                while True:
+                    char = source.get()
+                    if char is None:
+                        raise error("unterminated PCRE extension")
+                    if char == ")":
+                        break
+                continue
+
             group = 1
             name = None
             condgroup = None
