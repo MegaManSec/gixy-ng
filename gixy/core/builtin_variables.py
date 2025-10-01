@@ -1,5 +1,11 @@
+import os
+import re
+import logging
+
 from gixy.core.regexp import Regexp
 from gixy.core.variable import Variable
+
+LOG = logging.getLogger(__name__)
 
 BUILTIN_VARIABLES = {
     # http://nginx.org/en/docs/http/ngx_http_core_module.html#var_uri
@@ -238,11 +244,123 @@ BUILTIN_VARIABLES = {
 }
 
 
+# Additional variables loaded from drop-in configuration files
+EXTRA_VARIABLES = {}
+
+
+def clear_custom_variables():
+    """Clear variables loaded from drop-in files (useful for tests)."""
+    EXTRA_VARIABLES.clear()
+
+
+def _normalize_value_token(token):
+    """Parse a token from a drop-in variable file into a usable value.
+
+    Supported forms:
+    - "" or '' → empty string (treated as not user-controlled)
+    - r'...'/r"..." → regex pattern string
+    - '...'/"..." → literal string
+    - none/null (case-insensitive) → None
+    - empty/missing value → empty string
+    Trailing commas are tolerated.
+    """
+    if token is None:
+        return ""
+
+    token = token.strip().rstrip(",").strip()
+    if token.lower() in ("none", "null"):
+        return None
+
+    # Strip possible raw prefix
+    raw_prefix = False
+    if len(token) > 2 and token[0] in ("r", "R") and token[1] in ("'", '"'):
+        raw_prefix = True
+        token = token[1:]
+
+    # Strip quotes
+    if (len(token) >= 2 and token[0] == token[-1] and token[0] in ("'", '"')):
+        token = token[1:-1]
+
+    # For regex patterns we just return the inside content (without r/quotes)
+    return token
+
+
+def _parse_dropin_file(file_path):
+    """Parse a single drop-in file and return a dict of variables.
+
+    Each non-empty, non-comment line should be of the form:
+        name <value>
+    where value follows _normalize_value_token rules.
+    """
+    result = {}
+    assign_re = re.compile(r"^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*(.*)$")
+    try:
+        with open(file_path, "r") as fh:
+            for raw_line in fh:
+                line = raw_line.strip()
+                if not line or line.startswith("#") or line.startswith(";"):
+                    continue
+
+                m = assign_re.match(line)
+                if not m:
+                    LOG.info("Skip malformed custom variable line in %s: %r", file_path, raw_line.rstrip("\n"))
+                    continue
+                name, value_token = m.group(1), m.group(2).strip()
+                # Allow optional separator characters between name and value
+                # If the line used name = value or name: value, drop the first char
+                if value_token[:1] in ("=", ":"):
+                    value_token = value_token[1:].strip()
+                result[name] = _normalize_value_token(value_token)
+    except Exception as e:
+        LOG.warning("Failed to load custom variables from %s: %s", file_path, e)
+    return result
+
+
+def load_custom_variables_from_dirs(paths):
+    """Load additional variables from provided directories.
+
+    - Reads all files with extensions .cfg or .conf
+    - Merges into EXTRA_VARIABLES (later files override earlier ones)
+    """
+    if not paths:
+        return
+    for base in paths:
+        if not base:
+            continue
+        expanded = os.path.expanduser(base)
+        if not os.path.isdir(expanded):
+            continue
+        try:
+            entries = sorted(os.listdir(expanded))
+        except OSError:
+            continue
+        for fname in entries:
+            if not (fname.endswith(".cfg") or fname.endswith(".conf")):
+                continue
+            fpath = os.path.join(expanded, fname)
+            if not os.path.isfile(fpath):
+                continue
+            parsed = _parse_dropin_file(fpath)
+            if parsed:
+                EXTRA_VARIABLES.update(parsed)
+
+
+def _iter_all_variable_items():
+    # EXTRA overrides BUILTIN on duplicates
+    # Preserve prefix variables (ending with '_') semantics
+    # Order: EXTRA first, then BUILTIN
+    for k, v in EXTRA_VARIABLES.items():
+        yield k, v
+    for k, v in BUILTIN_VARIABLES.items():
+        if k not in EXTRA_VARIABLES:
+            yield k, v
+
+
 def is_builtin(name):
     if isinstance(name, int):
         # Indexed variables can't be builtin
         return False
-    for builtin in BUILTIN_VARIABLES:
+    for builtin, _ in _iter_all_variable_items():
         if builtin.endswith('_'):
             if name.startswith(builtin):
                 return True
@@ -252,7 +370,7 @@ def is_builtin(name):
 
 
 def builtin_var(name):
-    for builtin, regexp in BUILTIN_VARIABLES.items():
+    for builtin, regexp in _iter_all_variable_items():
         if builtin.endswith('_'):
             if not name.startswith(builtin):
                 continue

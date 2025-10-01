@@ -101,6 +101,13 @@ def _get_cli_parser():
         help='Disable "include" directive processing',
     )
 
+    parser.add_argument(
+        "--vars-dirs",
+        dest="vars_dirs",
+        type=str,
+        help="Comma-separated list of directories with custom variable drop-ins",
+    )
+
     group = parser.add_argument_group("plugins options")
     for plugin_cls in PluginsManager().plugins_classes:
         name = plugin_cls.__name__
@@ -180,6 +187,7 @@ def main():
         plugins=tests,
         skips=skips,
         allow_includes=not args.disable_includes,
+        vars_dirs=[x.strip() for x in args.vars_dirs.split(",")] if getattr(args, "vars_dirs", None) else None,
     )
 
     for plugin_cls in PluginsManager().plugins_classes:

@@ -1,14 +1,17 @@
 from gixy.core.context import get_context, push_context, purge_context
+from gixy.core import builtin_variables as builtins
 from gixy.directives.block import Root
 from gixy.core.regexp import Regexp
 from gixy.core.variable import Variable
 
 def setup_function():
     push_context(Root())
+    builtins.clear_custom_variables()
 
 
 def teardown_function():
     purge_context()
+    builtins.clear_custom_variables()
 
 
 def test_literal():
@@ -91,3 +94,27 @@ def test_script_boundary():
     assert not var.must_contain('a')
     assert var.must_startswith('/')
     assert not var.must_startswith('a')
+
+
+def test_custom_variable_dropin_literal_and_regex(tmp_path):
+    # Create drop-in files
+    d = tmp_path / "vars"
+    d.mkdir()
+    # Literal value
+    (d / "nginx-module-foo.cfg").write_text("foo_host \"example.com\"\n")
+    # Regex value with raw marker
+    (d / "nginx-module-bar.cfg").write_text("foo_uri  r'/[^\\s]*',\n")
+
+    builtins.load_custom_variables_from_dirs([str(d)])
+
+    # foo_host is treated as non-user-controlled: cannot contain newline
+    v1 = builtins.builtin_var("foo_host")
+    assert v1 is not None
+    assert not v1.can_contain("\n")
+    assert not v1.must_contain(".")
+
+    # foo_uri is regex: must start with '/'; cannot contain newlines
+    v2 = builtins.builtin_var("foo_uri")
+    assert v2 is not None
+    assert v2.must_startswith("/")
+    assert not v2.can_contain("\n")

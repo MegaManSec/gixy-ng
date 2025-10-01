@@ -6,6 +6,7 @@ from gixy.core.plugins_manager import PluginsManager
 from gixy.core.context import get_context, pop_context, push_context, purge_context
 from gixy.parser.nginx_parser import NginxParser
 from gixy.core.config import Config
+from gixy.core import builtin_variables as builtins
 
 LOG = logging.getLogger(__name__)
 
@@ -18,6 +19,13 @@ class Manager(object):
 
     def audit(self, file_path, file_data, is_stdin=False):
         LOG.debug("Audit config file: {fname}".format(fname=file_path))
+        # Load custom variables if configured
+        try:
+            vars_dirs = getattr(self.config, "vars_dirs", None)
+            if vars_dirs:
+                builtins.load_custom_variables_from_dirs(vars_dirs)
+        except Exception as e:
+            LOG.debug("Custom variables loading failed: %s", e)
         parser = NginxParser(
             cwd=os.path.dirname(file_path) if not is_stdin else '',
             allow_includes=self.config.allow_includes)

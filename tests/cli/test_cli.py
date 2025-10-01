@@ -6,7 +6,7 @@ This module demonstrates how to test the pixy's CLI using pytest.
 
 import sys
 import pytest
-from gixy.cli.main import main
+from gixy.cli.main import main, _get_cli_parser
 
 
 def test_cli_help(monkeypatch, capsys):
@@ -26,3 +26,10 @@ def test_cli_help(monkeypatch, capsys):
     # Capture and check the output for expected help text.
     captured = capsys.readouterr()
     assert "usage:" in captured.out.lower()
+
+
+def test_cli_vars_dirs_option_present():
+    parser = _get_cli_parser()
+    args = parser.parse_args(["--vars-dirs", "/etc/gixy/vars", "-"])
+    # ensure option parsed
+    assert getattr(args, "vars_dirs", None) == "/etc/gixy/vars"

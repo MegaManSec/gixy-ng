@@ -8,13 +8,15 @@ class Config(object):
                  severity=gixy.severity.UNSPECIFIED,
                  output_format=None,
                  output_file=None,
-                 allow_includes=True):
+                 allow_includes=True,
+                 vars_dirs=None):
         self.severity = severity
         self.output_format = output_format
         self.output_file = output_file
         self.plugins = plugins
         self.skips = skips
         self.allow_includes = allow_includes
+        self.vars_dirs = vars_dirs
         self.plugins_options = {}
 
     def set_for(self, name, options):

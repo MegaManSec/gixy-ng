@@ -14,6 +14,8 @@ plugins:
   - search
 nav:
   - Overview: index.md
+  - Configuration: en/configuration.md
+  - Variables drop-ins: en/variables-dropins.md
   - Plugins:
     - Server Side Request Forgery: en/plugins/ssrf.md
     - HTTP Splitting: en/plugins/httpsplitting.md
