@@ -25,15 +25,21 @@ class proxy_pass_normalized(Plugin):
         self.num_pattern = re.compile(r"\$\d+")
 
     def audit(self, directive):
-        proxy_pass_args = directive.args
         rewrite_fail = False
         parent = directive.parent
 
-        if not proxy_pass_args:
+        if not parent:
             return
 
-        if not parent or parent.name != 'location' or parent.modifier == '=':
-            return
+        if parent.name == 'location':
+            if parent.modifier == '=':
+                return
+        elif parent.name in ['limit_except', 'if']:
+            grandparent = parent.parent
+            if not grandparent or grandparent.name != 'location' or grandparent.modifier == '=':
+                return
+
+        proxy_pass_args = directive.args
 
         if proxy_pass_args[0].startswith("$") and '/' not in proxy_pass_args[0]:
             # If proxy pass destination is defined by only a variable, it is not possible to check for path normalization issues
