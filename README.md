@@ -37,14 +37,14 @@ Right now Gixy can find:
 *   [[if_is_evil] If is evil when used in location context](https://github.com/dvershinin/gixy/blob/master/docs/en/plugins/if_is_evil.md)
 *   [[allow_without_deny] Allow specified without deny](https://github.com/dvershinin/gixy/blob/master/docs/en/plugins/allow_without_deny.md)
 *   [[add_header_content_type] Setting Content-Type via add_header](https://github.com/dvershinin/gixy/blob/master/docs/en/plugins/add_header_content_type.md)
-*   [[resolver_external] Using external DNS nameservers](https://blog.zorinaq.com/nginx-resolver-vulns/)
+*   [[resolver_external] Using external DNS nameservers](https://gixy.getpagespeed.com/en/plugins/resolver_external/)
 *   [[version_disclosure] Using insecure values for server_tokens](https://github.com/dvershinin/gixy/blob/master/docs/en/plugins/version_disclosure.md)
 *   [[try_files_is_evil_too] The `try_files` directive is evil without open_file_cache](https://www.getpagespeed.com/server-setup/nginx-try_files-is-evil-too)
-*   [[proxy_pass_normalized] `proxy_pass` will decode and normalize paths when specified with a path](https://joshua.hu/proxy-pass-nginx-decoding-normalizing-url-path-dangerous#nginx-proxy_pass)
+*   [[proxy_pass_normalized] `proxy_pass` will decode and normalize paths when specified with a path](https://gixy.getpagespeed.com/en/plugins/proxy_pass_normalized/)
 *   [[worker_rlimit_nofile_vs_connections] `worker_rlimit_nofile` must be at least twice `worker_connections`](https://gixy.getpagespeed.com/en/plugins/worker_rlimit_nofile_vs_connections/)
 *   [[error_log_off] `error_log` set to `off`](https://gixy.getpagespeed.com/en/plugins/error_log_off/)
 *   [[unanchored_regex] Regular expression without anchors](https://gixy.getpagespeed.com/en/plugins/unanchored_regex/)
-*   [[regex_redos] Regular expressions may result in easy denial-of-service (ReDoS) attacks](https://joshua.hu/regex-redos-recheck-nginx-gixy)
+*   [[regex_redos] Regular expressions may result in easy denial-of-service (ReDoS) attacks](https://gixy.getpagespeed.com/en/plugins/regex_redos/)
 
 You can find things that Gixy is learning to detect at [Issues labeled with "new plugin"](https://github.com/dvershinin/gixy/issues?q=is%3Aissue+is%3Aopen+label%3A%22new+plugin%22)
 
@@ -62,11 +62,6 @@ Gixy is distributed on [PyPI](https://pypi.python.org/pypi/gixy-ng). The best wa
 
 ```bash
 pip install gixy-ng
-```
-
-Run Gixy and check results:
-```bash
-gixy
 ```
 
 # Usage
@@ -126,7 +121,6 @@ echo "resolver 1.1.1.1;" | gixy -
 ```
 
 ## Docker usage
-
 Gixy is available as a Docker image [from the Docker hub](https://hub.docker.com/r/getpagespeed/gixy/). To
 use it, mount the configuration that you want to analyse as a volume and provide the path to the
 configuration file when running the Gixy image.

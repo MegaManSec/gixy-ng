@@ -34,10 +34,10 @@ Right now Gixy can find:
 *   [[if_is_evil] If is evil when used in location context](en/plugins/if_is_evil.md)
 *   [[allow_without_deny] Allow specified without deny](en/plugins/allow_without_deny.md)
 *   [[add_header_content_type] Setting Content-Type via add_header](en/plugins/add_header_content_type.md)
-*   [[resolver_external] Using external DNS nameservers](https://blog.zorinaq.com/nginx-resolver-vulns/)
+*   [[resolver_external] Using external DNS nameservers](en/plugins/resolver_external.md)
 *   [[version_disclosure] Using insecure values for server_tokens](en/plugins/version_disclosure.md)
-*   [[proxy_pass_normalized] Using proxy_pass with a pathname will normalize and decode the requested path when proxying](https://joshua.hu/proxy-pass-nginx-decoding-normalizing-url-path-dangerous#nginx-proxy_pass)
-*   [[regex_redos] Regular expressions may result in easy denial-of-service (ReDoS) attacks](https://joshua.hu/regex-redos-recheck-nginx-gixy)
+*   [[proxy_pass_normalized] Using proxy_pass with a pathname will normalize and decode the requested path when proxying](en/plugins/proxy_pass_normalized.md)
+*   [[regex_redos] Regular expressions may result in easy denial-of-service (ReDoS) attacks](en/plugins/regex_redos.md)
 
 You can find things that Gixy is learning to detect at [Issues labeled with "new plugin"](https://github.com/dvershinin/gixy/issues?q=is%3Aissue+is%3Aopen+label%3A%22new+plugin%22)
 
@@ -119,7 +119,6 @@ echo "resolver 1.1.1.1;" | gixy -
 ```
 
 ## Docker usage
-
 Gixy is available as a Docker image [from the Docker hub](https://hub.docker.com/r/getpagespeed/gixy/). To
 use it, mount the configuration that you want to analyse as a volume and provide the path to the
 configuration file when running the Gixy image.
