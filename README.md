@@ -7,6 +7,7 @@ GIXY
 [![Your feedback is greatly appreciated](https://img.shields.io/maintenance/yes/2025.svg?style=flat-square)](https://github.com/dvershinin/gixy/issues/new)
 [![GitHub issues](https://img.shields.io/github/issues/dvershinin/gixy.svg?style=flat-square)](https://github.com/dvershinin/gixy/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/dvershinin/gixy.svg?style=flat-square)](https://github.com/dvershinin/gixy/pulls)
+[![NGINX Extras](https://img.shields.io/badge/NGINX%20Extras-Subscribe-blue?logo=nginx&style=flat-square)](https://nginx-extras.getpagespeed.com/)
 
 > [!NOTE]
 > Keep NGINX secure and up-to-date with maintained modules via [NGINX Extras RPM repository by GetPageSpeed](https://nginx-extras.getpagespeed.com/).
