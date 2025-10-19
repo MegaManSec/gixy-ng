@@ -63,3 +63,13 @@ new-headers
   - использовать модуль [ngx_headers_more](https://nginx-extras.getpagespeed.com/modules/headers-more/).
 
 Каждый из способов имеет свои преимущества и недостатки, какой предпочесть зависит от ваших потребностей. 
+
+### Опции CLI и конфигурации
+
+- `--add-header-redefinition-headers headers` (По умолчанию: не задано): Список заголовков (без учета регистра) через запятую, по которым будет вестись отчет при их «сбросе». Если опция не задана, будет отчет по всем сброшенным заголовкам. Пример: `--add-header-redefinition-headers x-frame-options,content-security-policy`.
+
+Пример в конфиге:
+```
+[add_header_redefinition]
+headers = x-frame-options, content-security-policy
+```

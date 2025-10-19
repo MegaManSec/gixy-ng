@@ -50,6 +50,11 @@ class origins(Plugin):
         'https_only': False,
         'lower_hostname': True
     }
+    options_help = {
+        'domains': 'Comma-separated list of trusted registrable domains. Use * to disable third-party checks. Example: "example.com,foo.bar".',
+        'https_only': 'Boolean. Only allow https scheme in origins/referers when true.',
+        'lower_hostname': 'Boolean. Normalize hostnames to lowercase prior to validation.'
+    }
 
     def __init__(self, config):
         super(origins, self).__init__(config)

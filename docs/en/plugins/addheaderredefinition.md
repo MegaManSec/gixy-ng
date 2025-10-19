@@ -63,3 +63,13 @@ There are several ways to solve this problem:
  - use [ngx_headers_more](https://nginx-extras.getpagespeed.com/modules/headers-more/) module.
 
 --8<-- "en/snippets/nginx-extras-cta.md"
+
+### CLI and config options
+
+- `--add-header-redefinition-headers headers` (Default: unset): Comma-separated, case-insensitive allowlist of headers to report when dropped. When unset, all dropped parent headers are reported. Example: `--add-header-redefinition-headers x-frame-options,content-security-policy`.
+
+Config file example:
+```
+[add_header_redefinition]
+headers = x-frame-options, content-security-policy
+```

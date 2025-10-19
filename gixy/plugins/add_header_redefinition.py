@@ -18,11 +18,22 @@ class add_header_redefinition(Plugin):
                    'See documentation: https://nginx.org/en/docs/http/ngx_http_headers_module.html#add_header')
     help_url = 'https://github.com/dvershinin/gixy/blob/master/docs/en/plugins/addheaderredefinition.md'
     directives = ['server', 'location', 'if']
+    # headers: optional set/list/tuple of header names to scope reporting to
+    # When empty, all dropped headers are reported. Case-insensitive; values are
+    # normalized to lowercase and compared to lowercase header names from config.
     options = {'headers': set()}
+    options_help = {
+        'headers': 'Only report dropped headers from this allowlist. Case-insensitive. Comma-separated list, e.g. "x-frame-options,content-security-policy".'
+    }
 
     def __init__(self, config):
         super(add_header_redefinition, self).__init__(config)
-        self.interesting_headers = self.config.get('headers')
+        raw_headers = self.config.get('headers')
+        # Normalize configured headers to lowercase set for case-insensitive matching
+        if isinstance(raw_headers, (list, tuple, set)):
+            self.interesting_headers = set(h.lower().strip() for h in raw_headers if h and isinstance(h, str))
+        else:
+            self.interesting_headers = set()
         # Define secure headers that should escalate severity
         self.secure_headers = [
             'x-frame-options',
@@ -48,7 +59,7 @@ class add_header_redefinition(Plugin):
 
             diff = parent_headers - actual_headers
 
-            if len(self.interesting_headers):
+            if self.interesting_headers:
                 diff = diff & self.interesting_headers
 
             if len(diff):

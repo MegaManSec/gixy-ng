@@ -63,3 +63,13 @@ new-headers
 - 使用 [ngx_headers_more](https://nginx-extras.getpagespeed.com/modules/headers-more/) 模块。
 
 --8<-- "zh/snippets/nginx-extras-cta.md"
+
+### 命令行与配置选项
+
+- `--add-header-redefinition-headers headers`（默认：未设置）：以逗号分隔的响应头白名单（不区分大小写）。设置后，仅当这些头在子级被“丢弃”时才会报告；未设置则报告所有被丢弃的头。示例：`--add-header-redefinition-headers x-frame-options,content-security-policy`。
+
+配置示例：
+```
+[add_header_redefinition]
+headers = x-frame-options, content-security-policy
+```

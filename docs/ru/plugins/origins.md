@@ -8,7 +8,20 @@
   - разрешение не доверенных third-party доменов.
 
 > По умолчанию Gixy не проверяет регулярные выражения на предмет матчинга third-party доменов, так как не знает кому можно верить.
-Передать список доверенных доменом можно при помощи опции `--origins-domains example.com,foo.bar`
+Список доверенных доменов можно передать с помощью опции `--origins-domains example.com,foo.bar`. При включении проверка выполняется на уровне регистрируемого домена (по Public Suffix List).
+
+### Опции CLI и конфигурации
+
+- `--origins-domains domains` (По умолчанию: `*`): Список доверенных доменов через запятую. `*` — отключить проверку third‑party доменов. Пример: `--origins-domains example.com,foo.bar`.
+- `--origins-https-only true|false` (По умолчанию: `false`): Если `true`, валиден только протокол `https` в `Origin`/`Referer`.
+- `--origins-lower-hostname true|false` (По умолчанию: `true`): Приводить имена хостов к нижнему регистру перед проверкой.
+
+Пример в конфиге:
+```
+[origins]
+domains = example.com, example.org
+https-only = true
+```
 
 ## Как самостоятельно обнаружить?
 Все довольно "просто":

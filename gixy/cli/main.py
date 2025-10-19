@@ -27,13 +27,31 @@ def _init_logger(debug=False):
     LOG.debug("logging initialized")
 
 
-def _create_plugin_help(option):
+def _create_plugin_help(plugin_cls, opt_key, option):
+    """Build help text for a plugin option, including usage hints and default.
+
+    Attempts to use plugin-provided descriptions via optional
+    `options_help` mapping on the plugin class.
+    """
     if isinstance(option, (tuple, list, set)):
         default = ",".join(list(option))
+        usage_hint = "Comma-separated list."
     else:
         default = str(option)
+        usage_hint = None
 
-    return "Default: {0}".format(default)
+    if isinstance(option, bool):
+        usage_hint = "Boolean (true/false)."
+
+    # Plugin-specific description if provided
+    base_desc = ""
+    if hasattr(plugin_cls, "options_help"):
+        options_help = plugin_cls.options_help
+        if isinstance(options_help, dict):
+            base_desc = options_help.get(opt_key, "")
+
+    parts = [p for p in [base_desc, usage_hint, "Default: {0}".format(default)] if p]
+    return " ".join(parts)
 
 
 def _get_cli_parser():
@@ -126,7 +144,7 @@ def _get_cli_parser():
                 metavar=opt_key,
                 dest=dst_name,
                 type=opt_type,
-                help=_create_plugin_help(opt_val),
+                help=_create_plugin_help(plugin_cls, opt_key, opt_val),
             )
 
     return parser

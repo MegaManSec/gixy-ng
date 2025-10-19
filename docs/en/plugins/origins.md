@@ -10,6 +10,19 @@ The most common errors with this configuration are:
 > Notice: by default, Gixy doesn't check regexes for third-party origins matching.
 > You can pass a list of trusted domains by using the option `--origins-domains example.com,foo.bar`.
 
+### CLI and config options
+
+- `--origins-domains domains` (Default: `*`): Comma-separated list of trusted registrable domains. Use `*` to disable third‑party checks. Example: `--origins-domains example.com,foo.bar`.
+- `--origins-https-only true|false` (Default: `false`): When true, only the `https` scheme is considered valid for `Origin`/`Referer`.
+- `--origins-lower-hostname true|false` (Default: `true`): Normalize hostnames to lowercase before validation.
+
+Config file example:
+```
+[origins]
+domains = example.com, example.org
+https-only = true
+```
+
 ## How can I find it?
 "Eazy"-breezy:
   - you have to find all the `if` directives that are in charge of `$http_origin` or `$http_referer` check;

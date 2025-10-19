@@ -114,6 +114,28 @@ Total issues:
 
 Or something else, you can find all other `gixy` arguments with the help command: `gixy --help`
 
+### Plugin options
+
+Some plugins expose options which you can set via CLI flags or config file. CLI flags follow the pattern `--<PluginName>-<option>` with dashes, while config file uses `[PluginName]` sections with dashed keys.
+
+- `origins`:
+  - `--origins-domains domains`: Comma-separated list of trusted registrable domains. Use `*` to disable third‑party checks. Example: `--origins-domains example.com,foo.bar`. Default: `*`.
+  - `--origins-https-only true|false`: When true, only the `https` scheme is considered valid for `Origin`/`Referer`. Default: `false`.
+  - `--origins-lower-hostname true|false`: Normalize hostnames to lowercase before validation. Default: `true`.
+
+- `add_header_redefinition`:
+  - `--add-header-redefinition-headers headers`: Comma-separated allowlist of header names (case-insensitive). When set, only dropped headers from this list will be reported; when unset, all dropped headers are reported. Example: `--add-header-redefinition-headers x-frame-options,content-security-policy`. Default: unset (report all).
+
+Examples (config file):
+```
+[origins]
+domains = example.com, example.org
+https-only = true
+
+[add_header_redefinition]
+headers = x-frame-options, content-security-policy
+```
+
 You can also make `gixy` use pipes (stdin), like so:
 
 ```bash

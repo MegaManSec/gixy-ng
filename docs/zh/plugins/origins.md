@@ -10,6 +10,19 @@
 > 注意：默认情况下，Gixy 不会检查正则是否允许第三方来源。
 > 你可以通过 `--origins-domains example.com,foo.bar` 传入可信域名列表。启用后，Gixy 会基于 Public Suffix List 以“可注册域”为单位识别来源，并标记那些放行域外值的正则。
 
+### 命令行与配置选项
+
+- `--origins-domains domains`（默认：`*`）：以逗号分隔的可信可注册域名列表。使用 `*` 关闭第三方检查。示例：`--origins-domains example.com,foo.bar`。
+- `--origins-https-only true|false`（默认：`false`）：为 `true` 时，仅允许 `https` 协议的 `Origin`/`Referer`。
+- `--origins-lower-hostname true|false`（默认：`true`）：校验前将主机名转换为小写。
+
+配置示例：
+```
+[origins]
+domains = example.com, example.org
+https-only = true
+```
+
 ## 如何发现？
 "简单粗暴" 的办法：
 - 找到所有对 `$http_origin` 或 `$http_referer` 进行校验的 `if` 指令；
