@@ -19,7 +19,6 @@ install_requires = [
     "crossplane>=0.5.8",
     'cached-property>=1.2.0;python_version<"3.8"',
     'argparse>=1.4.0;python_version<"3.2"',
-    "six>=1.1.0",
     "Jinja2>=2.8",
     "ConfigArgParse>=0.11.0",
 ]

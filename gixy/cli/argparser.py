@@ -3,7 +3,7 @@
 # flake8: noqa
 
 from configargparse import *
-from six.moves import StringIO
+from io import StringIO
 
 from gixy.core.plugins_manager import PluginsManager
 
