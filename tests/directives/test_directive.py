@@ -3,7 +3,7 @@ from gixy.directives.directive import *
 
 
 def _get_parsed(config):
-    root = NginxParser(cwd='', allow_includes=False).parse(config)
+    root = NginxParser(cwd='', allow_includes=False).parse_string(config)
     return root.children[0]
 
 

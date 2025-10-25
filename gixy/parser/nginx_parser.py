@@ -23,10 +23,128 @@ class NginxParser(object):
         self._init_directives()
         self._path_stack = None
 
-    def parse_file(self, path, root=None):
-        LOG.debug("Parse file: {0}".format(path))
-        content = open(path).read()
-        return self.parse(content=content, root=root, path_info=path)
+    def parse_file(self, path, root=None, display_path=None):
+        """Parse an nginx configuration file from disk.
+
+        Args:
+            path (str): Filesystem path to the nginx config to parse.
+            root (Optional[block.Root]): Existing AST root to append into. If None, a new root is created.
+            display_path (Optional[str]): Path to attribute to parsed nodes (used for stdin/tempfile attribution).
+
+        Returns:
+            block.Root: Parsed configuration tree.
+
+        Raises:
+            InvalidConfiguration: When parsing fails.
+        """
+        LOG.debug("Parse file: {0}".format(display_path if display_path else path))
+        root = self._ensure_root(root)
+        try:
+            parsed = self.parser.parse_path(path)
+        except ParseException as e:
+            error_msg = "char {char} (line:{line}, col:{col})".format(
+                char=e.loc, line=e.lineno, col=e.col
+            )
+            LOG.error(
+                'Failed to parse config "{file}": {error}'.format(
+                    file=path, error=error_msg
+                )
+            )
+            raise InvalidConfiguration(error_msg)
+
+        current_path = display_path if display_path else path
+        return self._build_tree_from_parsed(parsed, root, current_path)
+
+    def parse_string(self, content, root=None, path_info=None):
+        """Parse nginx configuration provided as a string/bytes.
+
+        The content is written to a temporary file so that the underlying
+        crossplane parser consistently receives a filesystem path (ensuring
+        identical behavior to file-based parsing).
+
+        Args:
+            content (Union[str, bytes]): Nginx configuration text to parse.
+            root (Optional[block.Root]): Existing AST root to append into. If None, a new root is created.
+            path_info (Optional[str]): Path to attribute to parsed nodes (e.g., "<stdin>").
+
+        Returns:
+            block.Root: Parsed configuration tree.
+
+        Raises:
+            InvalidConfiguration: When parsing fails.
+        """
+        root = self._ensure_root(root)
+        import tempfile
+        import os
+        data = content if isinstance(content, (bytes, bytearray)) else content.encode('utf-8')
+        tmp_filename = None
+        try:
+            with tempfile.NamedTemporaryFile(mode='wb', suffix='.conf', delete=False) as tmp:
+                tmp.write(data)
+                tmp_filename = tmp.name
+            return self.parse_file(tmp_filename, root=root, display_path=path_info)
+        except ParseException as e:
+            error_msg = "char {char} (line:{line}, col:{col})".format(
+                char=e.loc, line=e.lineno, col=e.col
+            )
+            if path_info:
+                LOG.error(
+                    'Failed to parse config "{file}": {error}'.format(
+                        file=path_info, error=error_msg
+                    )
+                )
+            else:
+                LOG.error("Failed to parse config: {error}".format(error=error_msg))
+            raise InvalidConfiguration(error_msg)
+        finally:
+            if tmp_filename:
+                try:
+                    os.unlink(tmp_filename)
+                except Exception:
+                    pass
+
+    # Backward-compatible alias (deprecated). Prefer parse_string.
+    def parse(self, content, root=None, path_info=None):
+        return self.parse_string(content, root=root, path_info=path_info)
+
+    def _ensure_root(self, root):
+        """Return provided root or create a new one.
+
+        Args:
+            root (Optional[block.Root]): Existing root node or None.
+
+        Returns:
+            block.Root: Root node.
+        """
+        return root if root else block.Root()
+
+    def _build_tree_from_parsed(self, parsed_block, root, current_path):
+        """Finalize parsed data into the directive tree.
+
+        Handles nginx -T dumps, manages current file attribution, and
+        appends parsed directives into the provided root.
+
+        Args:
+            parsed_block (list): Parsed representation from RawParser.
+            root (block.Root): Root node to append into.
+            current_path (str): Current file path used for attribution.
+
+        Returns:
+            block.Root: The root containing parsed directives.
+        """
+        # Handle nginx -T dump format if detected (multi-file with file delimiters)
+        if len(parsed_block) and parsed_block[0].getName() == "file_delimiter":
+            LOG.info("Switched to parse nginx configuration dump.")
+            root_filename = self._prepare_dump(parsed_block)
+            self.is_dump = True
+            self.cwd = os.path.dirname(root_filename)
+            parsed_block = self.configs[root_filename]
+
+        # Parse into the provided root/parent context and keep attribution
+        self._path_stack = current_path
+        self.parse_block(parsed_block, root)
+        self._path_stack = current_path
+        return root
 
     def parse(self, content, root=None, path_info=None):
         if path_info is not None:

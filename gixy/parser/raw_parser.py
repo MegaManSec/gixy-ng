@@ -123,6 +123,28 @@ class RawParser(object):
         except Exception as e:
             raise ParseException(str(e), loc=0, lineno=1, col=1)
 
+    def parse_path(self, path):
+        """
+        Parse nginx configuration by file path using crossplane and convert
+        the result into the legacy ParseResults structure.
+        """
+        try:
+            parsed = crossplane.parse(
+                path,
+                single=True,
+                strict=False,  # Allow directives outside their normal context
+                check_ctx=False,  # Skip context validation
+                check_args=False,  # Skip argument validation
+                comments=True,  # Include comments in the output
+            )
+
+            return self._convert_crossplane_to_parseresults(parsed)
+        except NgxParserBaseException as e:
+            # Convert crossplane error to ParseException format
+            raise ParseException(str(e), loc=0, lineno=getattr(e, 'line', 1), col=1)
+        except Exception as e:
+            raise ParseException(str(e), loc=0, lineno=1, col=1)
+
     def _convert_crossplane_to_parseresults(self, crossplane_data):
         """
         Convert crossplane's JSON format to the ParseResults format expected by the old parser.

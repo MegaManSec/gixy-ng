@@ -5,7 +5,7 @@ from gixy.directives.block import *
 
 
 def _parse(config):
-    return NginxParser(cwd='', allow_includes=False).parse(config)
+    return NginxParser(cwd='', allow_includes=False).parse_string(config)
 
 
 @pytest.mark.parametrize('config,expected', zip(

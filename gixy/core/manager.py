@@ -30,7 +30,12 @@ class Manager(object):
         parser = NginxParser(
             cwd=os.path.dirname(file_path) if not is_stdin else '',
             allow_includes=self.config.allow_includes)
-        self.root = parser.parse(content=file_data.read(), path_info=file_path)
+        if is_stdin:
+            # Route stdin through parse_string for consistent path-based parsing via tempfile
+            self.root = parser.parse_string(content=file_data.read(), path_info=file_path)
+        else:
+            # Prefer path-based parsing to avoid temporary files
+            self.root = parser.parse_file(file_path)
 
         push_context(self.root)
         self._audit_recursive(self.root.children)

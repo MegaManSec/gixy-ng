@@ -1,7 +1,7 @@
 ---
 description: Python interpreter and tooling (Always)
 globs:
-  alwaysApply: true
+alwaysApply: true
 ---
 
 - Use the Python interpreter at `${env:HOME}/.virtualenvs/gixy/bin/python` for all Python execution in this workspace.

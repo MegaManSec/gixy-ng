@@ -5,7 +5,7 @@ from gixy.directives.block import *
 
 
 def _get_parsed(config):
-    root = NginxParser(cwd='', allow_includes=False).parse(config)
+    root = NginxParser(cwd='', allow_includes=False).parse_string(config)
     return root.children[0]
 
 
@@ -147,7 +147,7 @@ def test_if_regex_backrefs_provide_variables():
     }
     """
 
-    tree = NginxParser(cwd='', allow_includes=False).parse(config)
+    tree = NginxParser(cwd='', allow_includes=False).parse_string(config)
     # Find the IfBlock and ensure variables (numeric backrefs) are provided
     if_block = None
     for child in tree.children:
