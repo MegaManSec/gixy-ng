@@ -43,28 +43,12 @@ class ParseException(Exception):
         self.col = col
 
 
-class ParseResults(list):
-    """A list subclass that mimics pyparsing.ParseResults behavior"""
-    def __init__(self, data=None, name=None):
-        super(ParseResults, self).__init__(data or [])
-        self._name = name
-
-    def getName(self):
-        return self._name
-
-    def setName(self, name):
-        self._name = name
-        return self
-    
-    def asList(self):
-        """Convert to a regular list, recursively converting nested ParseResults"""
-        result = []
-        for item in self:
-            if isinstance(item, ParseResults):
-                result.append(item.asList())
-            else:
-                result.append(item)
-        return result
+"""
+Legacy note:
+This module previously exposed a pyparsing-like ParseResults. We now normalize
+crossplane output directly into a lightweight dict node structure and return
+list[dict] from RawParser.
+"""
 
 
 class RawParser(object):
@@ -73,9 +57,7 @@ class RawParser(object):
     """
 
     def parse(self, data):
-        """
-        Returns the parsed tree in a format compatible with the old pyparsing implementation.
-        """
+        """Parse nginx configuration content and return normalized nodes (list[dict])."""
         if isinstance(data, bytes):
             content = data.decode('utf-8', errors='replace')
         else:
@@ -88,7 +70,7 @@ class RawParser(object):
         content = content.strip()
 
         if not content:
-            return ParseResults()
+            return []
 
         try:
             # Since crossplane expects a filename, we need to create a temporary file
@@ -111,8 +93,8 @@ class RawParser(object):
                     comments=True  # Include comments in the output
                 )
                 
-                # Convert crossplane format to the expected format
-                return self._convert_crossplane_to_parseresults(parsed)
+                # Convert crossplane format to normalized nodes
+                return self._normalize_crossplane(parsed)
             finally:
                 # Clean up temporary file
                 os.unlink(temp_filename)
@@ -124,10 +106,7 @@ class RawParser(object):
             raise ParseException(str(e), loc=0, lineno=1, col=1)
 
     def parse_path(self, path):
-        """
-        Parse nginx configuration by file path using crossplane and convert
-        the result into the legacy ParseResults structure.
-        """
+        """Parse nginx configuration by file path and return normalized nodes (list[dict])."""
         try:
             parsed = crossplane.parse(
                 path,
@@ -138,51 +117,54 @@ class RawParser(object):
                 comments=True,  # Include comments in the output
             )
 
-            return self._convert_crossplane_to_parseresults(parsed)
+            return self._normalize_crossplane(parsed)
         except NgxParserBaseException as e:
             # Convert crossplane error to ParseException format
             raise ParseException(str(e), loc=0, lineno=getattr(e, 'line', 1), col=1)
         except Exception as e:
             raise ParseException(str(e), loc=0, lineno=1, col=1)
 
-    def _convert_crossplane_to_parseresults(self, crossplane_data):
+    def _normalize_crossplane(self, crossplane_data):
+        """Convert crossplane JSON output to a normalized list[dict] node structure.
+
+        Node shapes:
+            {"kind": "directive", "name": str, "args": list[str]}
+            {"kind": "block", "name": str, "args": list[str], "children": list[dict], "raw": Optional[list[str]]}
+            {"kind": "include", "name": "include", "args": list[str]}
+            {"kind": "file_delimiter", "file": str}
+            {"kind": "comment", "text": str}
         """
-        Convert crossplane's JSON format to the ParseResults format expected by the old parser.
-        """
-        result = ParseResults()
-        
+        result = []
+
         if not crossplane_data or 'config' not in crossplane_data:
             return result
-            
-        # Handle the config structure from crossplane
+
         config_list = crossplane_data['config']
         if not config_list:
             return result
-            
+
+        multi_file = len(config_list) > 1
         for file_data in config_list:
             if 'parsed' in file_data and file_data['parsed']:
-                # Add file delimiter if this is a multi-file scenario
-                if len(config_list) > 1:
-                    file_delimiter = ParseResults([file_data.get('file', 'unknown')], 'file_delimiter')
-                    result.append(file_delimiter)
-                
-                # Add parsed content
-                result.extend(self._convert_blocks(file_data['parsed']))
-            
+                if multi_file:
+                    result.append({
+                        'kind': 'file_delimiter',
+                        'file': file_data.get('file', 'unknown'),
+                    })
+                result.extend(self._normalize_blocks(file_data['parsed']))
+
         return result
 
-    def _convert_blocks(self, blocks):
-        """
-        Convert crossplane blocks to ParseResults format.
-        """
-        result = ParseResults()
-        
+    def _normalize_blocks(self, blocks):
+        """Normalize crossplane 'parsed' list into list[dict] nodes."""
+        result = []
+
         # Filter out inline comments (comments that share line numbers with directives)
         line_numbers_with_directives = set()
         for item in blocks:
             if isinstance(item, dict) and item.get('directive') != '#':
                 line_numbers_with_directives.add(item.get('line'))
-        
+
         filtered_blocks = []
         for item in blocks:
             if isinstance(item, dict) and item.get('directive') == '#':
@@ -191,71 +173,63 @@ class RawParser(object):
                     filtered_blocks.append(item)
             else:
                 filtered_blocks.append(item)
-        
-        for block in filtered_blocks:
-            if not isinstance(block, dict):
+
+        for node in filtered_blocks:
+            if not isinstance(node, dict):
                 continue
-                
-            directive_name = block.get('directive', '')
-            args = [_process_nginx_string(arg) for arg in block.get('args', [])]
-            
-            if 'block' in block:
-                # This is a block directive
-                block_args = ParseResults(args)
-                block_content = ParseResults(self._convert_blocks(block['block']))
-                
-                # Determine block type
+
+            directive_name = node.get('directive', '')
+            args = [_process_nginx_string(arg) for arg in node.get('args', [])]
+
+            if 'block' in node:
+                # Block directive
+                children = self._normalize_blocks(node['block'])
                 if directive_name == 'if':
-                    # Special handling for if blocks
-                    if_condition = self._parse_if_condition(args)
-                    parsed_block = ParseResults([directive_name, if_condition, block_content], 'block')
-                elif directive_name == 'location':
-                    # Location blocks - let crossplane handle the argument parsing naturally
-                    location_args = ParseResults(args)
-                    parsed_block = ParseResults([directive_name, location_args, block_content], 'block')
-                else:
-                    # Generic block
-                    parsed_block = ParseResults([directive_name, block_args, block_content], 'block')
-                    
-                result.append(parsed_block)
+                    # Normalize condition args for if-blocks
+                    args = self._parse_if_condition(args)
+                normalized = {
+                    'kind': 'block',
+                    'name': directive_name,
+                    'args': list(args),
+                    'children': children,
+                }
+                result.append(normalized)
             else:
-                # This is a simple directive
+                # Simple directive / comment / include / lua blocks represented as directives
                 if directive_name == '#':
-                    # Special handling for comments
-                    comment_text = block.get('comment', '').strip()
-                    
-                    # Check if this is a file delimiter comment
+                    comment_text = node.get('comment', '').strip()
                     if comment_text.startswith('configuration file ') and comment_text.endswith(':'):
-                        # Extract file path from "configuration file /path/to/file:"
                         file_path = comment_text[len('configuration file '):-1]
-                        parsed_directive = ParseResults([file_path], 'file_delimiter')
+                        result.append({'kind': 'file_delimiter', 'file': file_path})
                     else:
-                        parsed_directive = ParseResults([comment_text], 'comment')
-                elif directive_name == 'include':
-                    # Special handling for include
-                    parsed_directive = ParseResults([directive_name] + args, 'include')
-                elif directive_name.endswith('_lua_block'):
-                    # Special handling for Lua blocks - treat as block with tokenized content
+                        result.append({'kind': 'comment', 'text': comment_text})
+                    continue
+
+                if directive_name == 'include':
+                    result.append({'kind': 'include', 'name': 'include', 'args': args})
+                    continue
+
+                if directive_name.endswith('_lua_block'):
+                    # Treat as a block with raw content preserved for tests/tools
+                    raw = []
                     if args and args[0]:
-                        tokenized_content = _tokenize_lua_content(args[0])
-                        parsed_directive = ParseResults([directive_name, [], tokenized_content], 'block')
-                    else:
-                        parsed_directive = ParseResults([directive_name, [], []], 'block')
-                else:
-                    # Regular directive
-                    parsed_directive = ParseResults([directive_name] + args, 'directive')
-                
-                result.append(parsed_directive)
-                
+                        raw = _tokenize_lua_content(args[0])
+                    result.append({
+                        'kind': 'block',
+                        'name': directive_name,
+                        'args': [],
+                        'children': [],
+                        'raw': raw,
+                    })
+                    continue
+
+                # Regular directive
+                result.append({'kind': 'directive', 'name': directive_name, 'args': args})
+
         return result
 
     def _parse_if_condition(self, args):
-        """
-        Parse if condition arguments to match the expected format.
-        """
+        """Normalize if-condition arguments as a flat list of tokens."""
         if not args:
-            return ParseResults()
-            
-        # Crossplane already parses if conditions correctly into separate arguments
-        # We just need to return them as a ParseResults
-        return ParseResults(args)
+            return []
+        return list(args)

@@ -133,7 +133,7 @@ class NginxParser(object):
             block.Root: The root containing parsed directives.
         """
         # Handle nginx -T dump format if detected (multi-file with file delimiters)
-        if len(parsed_block) and parsed_block[0].getName() == "file_delimiter":
+        if len(parsed_block) and isinstance(parsed_block[0], dict) and parsed_block[0].get('kind') == "file_delimiter":
             LOG.info("Switched to parse nginx configuration dump.")
             root_filename = self._prepare_dump(parsed_block)
             self.is_dump = True
@@ -168,7 +168,7 @@ class NginxParser(object):
                 LOG.error("Failed to parse config: {error}".format(error=error_msg))
             raise InvalidConfiguration(error_msg)
 
-        if len(parsed) and parsed[0].getName() == "file_delimiter":
+        if len(parsed) and isinstance(parsed[0], dict) and parsed[0].get('kind') == "file_delimiter":
             #  Were parse nginx dump
             LOG.info("Switched to parse nginx configuration dump.")
             root_filename = self._prepare_dump(parsed)
@@ -183,28 +183,43 @@ class NginxParser(object):
         return root
 
     def parse_block(self, parsed_block, parent):
-        for parsed in parsed_block:
-            parsed_type = parsed.getName()
-            parsed_name = parsed[0]
-            parsed_args = parsed[1:]
+        for node in parsed_block:
+            if not isinstance(node, dict):
+                continue
+            parsed_type = node.get('kind')
+            if parsed_type == 'comment' or parsed_type is None:
+                continue
+
+            if parsed_type == 'include':
+                # include is handled specially
+                path_info = self.path_info
+                self._resolve_include(node.get('args', []), parent)
+                self._path_stack = path_info
+                continue
+
+            parsed_name = node.get('name')
+            if parsed_type == 'block':
+                parsed_args = [node.get('args', []), node.get('children', [])]
+            elif parsed_type == 'directive':
+                parsed_args = node.get('args', [])
+            elif parsed_type == 'hash_value':
+                parsed_args = node.get('args', [])
+            else:
+                # unknown or file_delimiter should not be here
+                continue
+
             if parent.name in ['map', 'geo'] and parsed_type == 'directive': # Hack because included maps are treated as directives (bleh)
-                if len(parsed_args) > 1:
+                if isinstance(parsed_args, list) and len(parsed_args) > 1:
                     error_msg = "Invalid map with {} parameters: map {} {} {{ {} {}; }};".format(len(parsed_args), parent.args[0], parent.args[1], parsed_name, ' '.join(parsed_args))
                     LOG.warn('Failed to parse "{path_info}": {error}'.format(path_info=self.path_info, error=error_msg))
                     continue
-
                 parsed_type = 'hash_value'
-            if parsed_type == "include":
-                # TODO: WTF?!
-                path_info = self.path_info
-                self._resolve_include(parsed_args, parent)
-                self._path_stack = path_info
-            else:
-                directive_inst = self.directive_factory(
-                    parsed_type, parsed_name, parsed_args
-                )
-                if directive_inst:
-                    parent.append(directive_inst)
+
+            directive_inst = self.directive_factory(
+                parsed_type, parsed_name, parsed_args
+            )
+            if directive_inst:
+                parent.append(directive_inst)
 
     def directive_factory(self, parsed_type, parsed_name, parsed_args):
         klass = self._get_directive_class(parsed_type, parsed_name)
@@ -304,14 +319,14 @@ class NginxParser(object):
     def _prepare_dump(self, parsed_block):
         filename = ""
         root_filename = ""
-        for parsed in parsed_block:
-            if parsed.getName() == "file_delimiter":
+        for node in parsed_block:
+            if isinstance(node, dict) and node.get('kind') == 'file_delimiter':
                 if not filename:
-                    root_filename = parsed[0]
-                filename = parsed[0]
+                    root_filename = node.get('file')
+                filename = node.get('file')
                 self.configs[filename] = []
                 continue
-            self.configs[filename].append(parsed)
+            self.configs[filename].append(node)
         return root_filename
 
     @property
