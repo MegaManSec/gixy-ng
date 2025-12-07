@@ -166,4 +166,9 @@ Code guidelines:
   * Python code style should follow [pep8](https://www.python.org/dev/peps/pep-0008/) standards whenever possible;
   * Pull requests with new plugins must have unit tests for them.
 
+Community guidelines:
+  * Be respectful and constructive in discussions;
+  * This project uses AI-assisted development - disparaging remarks about AI tooling are unwelcome;
+  * Focus on the code and ideas, not the tools used to create them.
+
 
