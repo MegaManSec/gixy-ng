@@ -1,22 +1,20 @@
 """
 Missing Resolver Plugin - Detects static DNS resolution in proxy directives.
 
-This plugin uses INVERSE LOGIC for maximum coverage:
-- Instead of trying to identify public domains (impossible without PSL),
-  we identify what's DEFINITELY INTERNAL and flag EVERYTHING ELSE.
-- This approach is MORE secure: any unknown/new TLD gets flagged automatically.
-
-Detection:
+This plugin is COMPREHENSIVE and detects:
 - Static hostnames in proxy_pass, fastcgi_pass, uwsgi_pass, scgi_pass, grpc_pass
-- Upstream servers without 'resolve' parameter
-- Cloud provider endpoints (AWS ELB, GCP, Azure, Cloudflare) with HIGH severity
+- Upstream servers without 'resolve' parameter  
+- Cloud provider endpoints (AWS ELB, GCP, Azure, Cloudflare) with elevated severity
 - Variable-based proxy_pass WITHOUT a resolver directive configured
+- Kubernetes service discovery patterns
 
-Why inverse logic is superior:
-- No need for external dependencies (Public Suffix List, tldextract, etc.)
-- No hardcoded TLD list that becomes outdated
-- New TLDs (.ai, .xyz, .whatever) automatically flagged
-- More secure: false positives > false negatives for security tools
+Superior detection features:
+- Proper TLD classification (not just suffix matching)
+- Compound TLD support (.co.uk, .com.au, etc.)
+- Cloud provider hostname detection with HIGH severity
+- Resolver directive scope checking
+- Upstream zone directive awareness (enables dynamic config)
+- Smart variable analysis
 """
 
 import re
@@ -28,162 +26,117 @@ from gixy.core.variable import compile_script
 import gixy.core.builtin_variables as builtins
 
 
-# =============================================================================
-# INTERNAL DOMAIN DETECTION (inverse logic - identify internal, flag rest)
-# =============================================================================
-
-# RFC 2606 / RFC 6761 reserved TLDs - ALWAYS internal
-RFC_RESERVED_TLDS = frozenset([
-    'test',        # RFC 2606 - testing
-    'example',     # RFC 2606 - documentation
-    'invalid',     # RFC 2606 - invalid
-    'localhost',   # RFC 6761 - loopback
-    'local',       # RFC 6762 - mDNS/Bonjour
-    'onion',       # RFC 7686 - Tor
-    'arpa',        # Infrastructure (in-addr.arpa, ip6.arpa)
+# Common public TLDs
+PUBLIC_TLDS = frozenset([
+    # Generic TLDs
+    'com', 'net', 'org', 'info', 'biz', 'io', 'co', 'app', 'dev', 'cloud',
+    'online', 'site', 'website', 'tech', 'store', 'shop', 'blog', 'xyz',
+    'me', 'tv', 'cc', 'ws', 'mobi', 'name', 'pro', 'aero', 'asia', 'cat',
+    'coop', 'jobs', 'museum', 'travel', 'xxx', 'post', 'tel',
+    # New gTLDs (popular ones)
+    'agency', 'consulting', 'digital', 'email', 'global', 'group', 'guru',
+    'host', 'link', 'live', 'media', 'network', 'news', 'plus', 'press',
+    'services', 'social', 'solutions', 'space', 'studio', 'support',
+    'systems', 'today', 'tools', 'video', 'world', 'zone',
+    # Country codes
+    'uk', 'de', 'fr', 'nl', 'ru', 'cn', 'jp', 'br', 'au', 'ca', 'in', 'it',
+    'es', 'pl', 'se', 'no', 'fi', 'dk', 'at', 'ch', 'be', 'cz', 'hu', 'ro',
+    'ua', 'kr', 'tw', 'hk', 'sg', 'my', 'th', 'ph', 'id', 'vn', 'nz', 'za',
+    'mx', 'ar', 'cl', 'pe', 've', 'ec', 'pt', 'gr', 'tr', 'il', 'ae',
+    'sa', 'eg', 'ng', 'ke', 'ie', 'is', 'ee', 'lv', 'lt', 'sk', 'si', 'hr',
+    'bg', 'rs', 'by', 'kz', 'uz', 'az', 'ge', 'am', 'md', 'pk', 'bd', 'lk',
+    'us', 'eu', 'asia',
+    # Infrastructure TLDs
+    'edu', 'gov', 'mil', 'int',
 ])
 
-# Common internal/private domain suffixes used in enterprises
-INTERNAL_SUFFIXES = (
-    # Enterprise conventions
-    '.internal', '.intranet', '.private', '.corp', '.corporate',
-    '.home', '.lan', '.localdomain', '.office', '.company',
-    '.dev.local', '.staging.local', '.prod.local',
-    
-    # Kubernetes (all patterns)
-    '.cluster.local', '.svc.cluster.local', '.pod.cluster.local',
-    '.svc', '.pod',
-    
-    # Docker
-    '.docker', '.docker.internal', '.docker.localhost',
-    
-    # HashiCorp stack
-    '.consul', '.service.consul', '.node.consul', '.query.consul',
-    '.vault', '.nomad',
-    
-    # Mesos/Marathon/DC/OS
-    '.mesos', '.marathon.mesos', '.dcos',
-    
-    # Rancher/K3s
-    '.rancher.internal', '.cattle-system',
-    
-    # AWS internal (NOT public AWS endpoints!)
-    '.ec2.internal', '.compute.internal', '.ecs.internal',
-    '.amazonaws.com.internal',  # VPC internal
-    
-    # Azure internal
-    '.internal.cloudapp.net', '.azure.internal',
-    
-    # GCP internal
-    '.internal', '.c.PROJECT.internal',
-    
-    # OpenStack
-    '.novalocal', '.openstacklocal',
+# Compound TLDs (country-specific second-level domains)
+COMPOUND_TLDS = frozenset([
+    'co.uk', 'org.uk', 'me.uk', 'ltd.uk', 'plc.uk', 'net.uk', 'sch.uk',
+    'com.au', 'net.au', 'org.au', 'edu.au', 'gov.au', 'asn.au', 'id.au',
+    'com.br', 'net.br', 'org.br', 'gov.br', 'edu.br',
+    'co.nz', 'net.nz', 'org.nz', 'govt.nz', 'ac.nz',
+    'co.jp', 'or.jp', 'ne.jp', 'ac.jp', 'go.jp',
+    'com.cn', 'net.cn', 'org.cn', 'gov.cn', 'edu.cn',
+    'co.kr', 'or.kr', 'ne.kr', 'go.kr', 'ac.kr',
+    'com.mx', 'net.mx', 'org.mx', 'gob.mx', 'edu.mx',
+    'com.ar', 'net.ar', 'org.ar', 'gov.ar', 'edu.ar',
+    'com.tw', 'net.tw', 'org.tw', 'gov.tw', 'edu.tw',
+    'com.hk', 'net.hk', 'org.hk', 'gov.hk', 'edu.hk',
+    'com.sg', 'net.sg', 'org.sg', 'gov.sg', 'edu.sg',
+    'co.in', 'net.in', 'org.in', 'gov.in', 'ac.in',
+    'co.za', 'net.za', 'org.za', 'gov.za', 'ac.za',
+    'com.tr', 'net.tr', 'org.tr', 'gov.tr', 'edu.tr',
+    'co.il', 'net.il', 'org.il', 'gov.il', 'ac.il',
+    'com.ua', 'net.ua', 'org.ua', 'gov.ua', 'edu.ua',
+    'com.pl', 'net.pl', 'org.pl', 'gov.pl', 'edu.pl',
+])
+
+# Internal/local domain suffixes
+LOCAL_SUFFIXES = (
+    # Standard local
+    '.intranet', '.internal', '.private', '.corp', '.home', '.lan',
+    '.local', '.localhost', '.localdomain',
+    # Reserved per RFC 2606 / RFC 6761
+    '.test', '.example', '.invalid', '.onion',
+    # Kubernetes/Docker/Container orchestration
+    '.svc', '.svc.cluster', '.svc.cluster.local', '.pod', '.pod.cluster.local',
+    '.default', '.default.svc', '.default.svc.cluster.local',
+    # Common internal patterns
+    '.consul', '.service.consul', '.node.consul',  # HashiCorp Consul
+    '.marathon.mesos', '.mesos',  # Mesos/Marathon
+    '.rancher.internal',  # Rancher
+    '.docker', '.docker.internal',  # Docker
+    '.ecs.internal',  # AWS ECS internal (but not ELB!)
 )
 
-# Single-word hostnames commonly used internally
-INTERNAL_SINGLE_WORDS = frozenset([
-    'localhost', 'backend', 'frontend', 'api', 'web', 'app', 'service',
-    'database', 'db', 'redis', 'memcached', 'cache', 'queue', 'worker',
-    'nginx', 'apache', 'proxy', 'gateway', 'lb', 'loadbalancer',
-    'master', 'slave', 'primary', 'replica', 'node', 'server',
-    'elasticsearch', 'kibana', 'logstash', 'grafana', 'prometheus',
-    'kafka', 'zookeeper', 'rabbitmq', 'activemq', 'nats',
-    'postgres', 'postgresql', 'mysql', 'mariadb', 'mongodb', 'mongo',
-    'vault', 'consul', 'etcd', 'minio', 'storage',
-])
-
-# =============================================================================
-# CLOUD PROVIDER DETECTION (HIGH severity - IPs change frequently)
-# =============================================================================
-
+# Cloud provider patterns that DEFINITELY need dynamic resolution (HIGH severity)
+# These IPs change frequently and using static resolution is almost always wrong
 CLOUD_PROVIDER_PATTERNS = [
-    # AWS - comprehensive coverage
+    # AWS
     (r'\.elb\.amazonaws\.com$', 'AWS ELB'),
-    (r'\.elb\.[a-z]+-[a-z]+-\d+\.amazonaws\.com$', 'AWS Regional ELB'),
-    (r'[a-z0-9]+-[a-z0-9]+\.elb\.amazonaws\.com$', 'AWS Classic ELB'),
+    (r'\.elb\.[a-z]+-[a-z]+-\d+\.amazonaws\.com$', 'AWS ELB'),
     (r'\.elasticbeanstalk\.com$', 'AWS Elastic Beanstalk'),
     (r'\.cloudfront\.net$', 'AWS CloudFront'),
     (r'\.execute-api\.[a-z]+-[a-z]+-\d+\.amazonaws\.com$', 'AWS API Gateway'),
     (r'\.lambda-url\.[a-z]+-[a-z]+-\d+\.on\.aws$', 'AWS Lambda URL'),
     (r'\.s3\.amazonaws\.com$', 'AWS S3'),
-    (r'\.s3-[a-z]+-[a-z]+-\d+\.amazonaws\.com$', 'AWS S3 Regional'),
-    (r'\.s3\.[a-z]+-[a-z]+-\d+\.amazonaws\.com$', 'AWS S3 Regional'),
-    (r'\.amplifyapp\.com$', 'AWS Amplify'),
-    (r'\.awsglobalaccelerator\.com$', 'AWS Global Accelerator'),
-    
-    # Google Cloud - comprehensive coverage
+    (r'\.s3\.[a-z]+-[a-z]+-\d+\.amazonaws\.com$', 'AWS S3'),
+    # Google Cloud
     (r'\.run\.app$', 'Google Cloud Run'),
     (r'\.cloudfunctions\.net$', 'Google Cloud Functions'),
     (r'\.appspot\.com$', 'Google App Engine'),
     (r'\.googleapis\.com$', 'Google APIs'),
-    (r'\.web\.app$', 'Firebase Hosting'),
-    (r'\.firebaseapp\.com$', 'Firebase Hosting'),
-    (r'\.cloudfunctions\.net$', 'Google Cloud Functions'),
-    
-    # Azure - comprehensive coverage
+    # Azure
     (r'\.azurewebsites\.net$', 'Azure App Service'),
     (r'\.azure-api\.net$', 'Azure API Management'),
     (r'\.cloudapp\.azure\.com$', 'Azure Cloud Service'),
     (r'\.blob\.core\.windows\.net$', 'Azure Blob Storage'),
     (r'\.azureedge\.net$', 'Azure CDN'),
     (r'\.trafficmanager\.net$', 'Azure Traffic Manager'),
-    (r'\.azurefd\.net$', 'Azure Front Door'),
-    (r'\.azurestaticapps\.net$', 'Azure Static Web Apps'),
-    (r'\.azure\.com$', 'Azure Service'),
-    
     # Cloudflare
     (r'\.workers\.dev$', 'Cloudflare Workers'),
     (r'\.pages\.dev$', 'Cloudflare Pages'),
-    (r'\.r2\.dev$', 'Cloudflare R2'),
-    
-    # Major PaaS providers
+    # Heroku
     (r'\.herokuapp\.com$', 'Heroku'),
+    # Vercel/Zeit
     (r'\.vercel\.app$', 'Vercel'),
     (r'\.now\.sh$', 'Vercel (legacy)'),
+    # Netlify
     (r'\.netlify\.app$', 'Netlify'),
     (r'\.netlify\.com$', 'Netlify'),
+    # Railway
     (r'\.railway\.app$', 'Railway'),
+    # Render
     (r'\.onrender\.com$', 'Render'),
-    (r'\.render\.com$', 'Render'),
-    (r'\.fly\.dev$', 'Fly.io'),
-    (r'\.deno\.dev$', 'Deno Deploy'),
-    (r'\.supabase\.co$', 'Supabase'),
-    (r'\.neon\.tech$', 'Neon Database'),
-    (r'\.planetscale\.com$', 'PlanetScale'),
-    
     # DigitalOcean
     (r'\.ondigitalocean\.app$', 'DigitalOcean App Platform'),
-    (r'\.digitaloceanspaces\.com$', 'DigitalOcean Spaces'),
-    
-    # Other cloud providers
-    (r'\.linode\.com$', 'Linode'),
-    (r'\.vultr\.com$', 'Vultr'),
-    (r'\.scaleway\.com$', 'Scaleway'),
-    (r'\.hetzner\.cloud$', 'Hetzner Cloud'),
-    (r'\.upcloud\.com$', 'UpCloud'),
-    
-    # CDN providers (IPs definitely change)
-    (r'\.akamaihd\.net$', 'Akamai CDN'),
-    (r'\.akamaized\.net$', 'Akamai CDN'),
-    (r'\.akamaitechnologies\.com$', 'Akamai'),
-    (r'\.fastly\.net$', 'Fastly CDN'),
-    (r'\.fastlylb\.net$', 'Fastly Load Balancer'),
-    (r'\.cdn77\.org$', 'CDN77'),
-    (r'\.stackpathdns\.com$', 'StackPath CDN'),
-    (r'\.stackpathcdn\.com$', 'StackPath CDN'),
-    (r'\.kxcdn\.com$', 'KeyCDN'),
-    (r'\.bunnycdn\.com$', 'BunnyCDN'),
-    (r'\.b-cdn\.net$', 'BunnyCDN'),
-    
-    # Generic patterns (high confidence)
-    (r'\.cdn\.[a-z]+\.[a-z]+$', 'CDN endpoint'),
-    (r'-lb\.', 'Load balancer'),
+    # Fly.io
+    (r'\.fly\.dev$', 'Fly.io'),
+    # Generic CDN/LB patterns
+    (r'\.cdn\.', 'CDN endpoint'),
     (r'\.lb\.', 'Load balancer'),
     (r'\.loadbalancer\.', 'Load balancer'),
-    (r'-elb\.', 'Elastic Load Balancer'),
-    (r'-alb\.', 'Application Load Balancer'),
-    (r'-nlb\.', 'Network Load Balancer'),
 ]
 
 
@@ -271,13 +224,13 @@ class missing_resolver(Plugin):
             self._report_missing_resolver_for_variable(directive, directive_name, resolved_host)
             return
 
-        # Classify the hostname using inverse logic
+        # Classify the hostname
         host_type, cloud_provider = self._classify_host(resolved_host)
         
         if host_type == 'internal':
-            return  # Definitely internal - skip
+            return
         
-        # host_type == 'external' - flag it!
+        # Report based on classification
         if cloud_provider:
             self._report_cloud_provider(directive, directive_name, resolved_host, cloud_provider)
         else:
@@ -301,72 +254,43 @@ class missing_resolver(Plugin):
 
     def _classify_host(self, host):
         """
-        Classify hostname using INVERSE LOGIC.
-        
-        Instead of trying to identify public domains (impossible without PSL),
-        we identify what's DEFINITELY INTERNAL and flag EVERYTHING ELSE.
-        This is MORE secure: new/unknown TLDs automatically get flagged.
-        
+        Classify hostname.
         Returns: (type, cloud_provider)
-        - type: 'internal' or 'external'
+        - type: 'public', 'internal', 'cloud', or 'unknown'
         - cloud_provider: name of cloud provider if detected, else None
         """
-        host_lower = host.lower().strip('.')
+        host_lower = host.lower()
         
-        # =================================================================
-        # STEP 1: Cloud providers FIRST (highest priority, HIGH severity)
-        # =================================================================
-        for pattern, provider_name in self.cloud_patterns:
-            if pattern.search(host_lower):
-                return ('external', provider_name)
-        
-        # =================================================================
-        # STEP 2: Single-label hostname (no dot) = INTERNAL
-        # Examples: "backend", "api", "redis", "localhost"
-        # =================================================================
-        if '.' not in host_lower:
-            return ('internal', None)
-        
-        # =================================================================
-        # STEP 3: RFC reserved TLDs = INTERNAL (guaranteed never public)
-        # =================================================================
-        tld = host_lower.rsplit('.', 1)[-1]
-        if tld in RFC_RESERVED_TLDS:
-            return ('internal', None)
-        
-        # =================================================================
-        # STEP 4: Internal suffixes = INTERNAL
-        # Enterprise patterns, K8s, Docker, Consul, etc.
-        # =================================================================
-        for suffix in INTERNAL_SUFFIXES:
+        # Check for local suffixes first
+        for suffix in LOCAL_SUFFIXES:
             if host_lower.endswith(suffix):
                 return ('internal', None)
         
-        # =================================================================
-        # STEP 5: Common internal hostname patterns
-        # =================================================================
-        parts = host_lower.split('.')
-        
-        # servicename.namespace pattern (k8s style) or servicename.env
-        if len(parts) == 2:
-            first_part, second_part = parts
-            if first_part in INTERNAL_SINGLE_WORDS:
-                # Short alphabetic second part = likely internal
-                if len(second_part) <= 12 and second_part.isalpha():
-                    return ('internal', None)
-        
-        # =================================================================
-        # STEP 6: IP-like patterns (k8s pod naming)
-        # Examples: "10-0-0-1.default.pod.cluster.local"
-        # =================================================================
-        if re.match(r'^\d{1,3}-\d{1,3}-\d{1,3}-\d{1,3}\.', host_lower):
+        # Single-label hostname = internal
+        if '.' not in host_lower:
             return ('internal', None)
         
-        # =================================================================
-        # STEP 7: EVERYTHING ELSE = EXTERNAL (flag it!)
-        # This catches ALL public domains including new TLDs
-        # =================================================================
-        return ('external', None)
+        # Check for cloud provider patterns (HIGH priority detection)
+        for pattern, provider_name in self.cloud_patterns:
+            if pattern.search(host_lower):
+                return ('cloud', provider_name)
+        
+        # Check compound TLDs first
+        parts = host_lower.rsplit('.', 2)
+        if len(parts) >= 3:
+            compound = '.'.join(parts[-2:])
+            if compound in COMPOUND_TLDS:
+                return ('public', None)
+        
+        # Check single TLD
+        parts = host_lower.rsplit('.', 1)
+        if len(parts) == 2:
+            tld = parts[1]
+            if tld in PUBLIC_TLDS:
+                return ('public', None)
+        
+        # Unknown - treat as potentially public
+        return ('unknown', None)
 
     def _check_upstream(self, directive, resolved_host):
         """
