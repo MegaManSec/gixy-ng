@@ -5,24 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.14] - 2025-12-06
-
-### Added
-- **ReDoS detection rewrite**: Complete rewrite of `regex_redos` plugin using Python's built-in `sre_parse` module - no external dependencies required. Detects nested quantifiers (exponential O(2^n)), overlapping alternatives (polynomial O(n²)), and adjacent greedy quantifiers.
-- **nginx 1.29.3 support**: `add_header_redefinition` plugin now respects `add_header_inherit on;` directive.
-- **Integration testing**: Added comprehensive WordPress production config (~380 lines) as integration test to catch false positives.
-- **Documentation**: Added missing `try_files_is_evil_too.md`, updated plugin list in index.md (now 25 plugins).
-- **`if` block variable capture**: `if` blocks with regex conditions (`~`, `~*`) now properly expose capture groups as variables with correct boundary inheritance.
-
-### Changed
-- ReDoS plugin now covers `location`, `if`, `rewrite`, `server_name`, and `map` directives.
-- Documentation updated for `add_header_redefinition` with nginx 1.29.3+ solution.
-- Expanded regex_redos.md with detailed vulnerability patterns and examples.
-
-### Fixed
-- Code quality improvements: explicit `autoescape=False` for Jinja2 (plain text output), noqa comments for intentional test patterns and random module usage.
-- Legacy code cleanup in regexp.py: replaced alternation with character class, merged string concatenation, improved comments.
-
 ## [0.2.13] - 2025-12-06
 
 ### Added
