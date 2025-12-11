@@ -1,5 +1,6 @@
 """Main module for Gixy CLI"""
 
+import argparse
 import os
 import sys
 import logging
@@ -27,6 +28,28 @@ def _init_logger(debug=False):
     LOG.debug("logging initialized")
 
 
+def _str_to_bool(value):
+    """Parse flexible boolean values for plugin CLI options.
+
+    Accepts common forms like true/false, yes/no, on/off, 1/0 (case-insensitive).
+    """
+    if isinstance(value, bool):
+        return value
+
+    text = str(value).strip().lower()
+    truthy = {"1", "true", "yes", "y", "on"}
+    falsy = {"0", "false", "no", "n", "off"}
+
+    if text in truthy:
+        return True
+    if text in falsy:
+        return False
+
+    raise argparse.ArgumentTypeError(
+        "Expected a boolean value (true/false, yes/no, 1/0), got {!r}".format(value)
+    )
+
+
 def _create_plugin_help(plugin_cls, opt_key, option):
     """Build help text for a plugin option, including usage hints and default.
 
@@ -41,7 +64,7 @@ def _create_plugin_help(plugin_cls, opt_key, option):
         usage_hint = None
 
     if isinstance(option, bool):
-        usage_hint = "Boolean (true/false)."
+        usage_hint = "Boolean (true/false, yes/no, 1/0)."
 
     # Plugin-specific description if provided
     base_desc = ""
@@ -78,8 +101,18 @@ def _get_cli_parser():
         help="Report issues of a given severity level or higher (-l for LOW, -ll for MEDIUM, -lll for HIGH)",
     )
 
-    default_formatter = "console" if sys.stdout.isatty() else "text"
+    # Determine available formatters first, then pick default
     available_formatters = formatters().keys()
+
+    # Use rich_console as default for TTY if available, fallback to console
+    if sys.stdout.isatty():
+        # Only use rich_console if it's actually registered (all imports succeeded)
+        if "rich_console" in available_formatters:
+            default_formatter = "rich_console"
+        else:
+            default_formatter = "console"
+    else:
+        default_formatter = "text"
     parser.add_argument(
         "-f",
         "--format",
@@ -138,7 +171,12 @@ def _get_cli_parser():
                 "_", "-"
             )
             dst_name = "{plugin}:{key}".format(plugin=name, key=opt_key)
-            opt_type = str if isinstance(opt_val, (tuple, list, set)) else type(opt_val)
+            if isinstance(opt_val, (tuple, list, set)):
+                opt_type = str
+            elif isinstance(opt_val, bool):
+                opt_type = _str_to_bool
+            else:
+                opt_type = type(opt_val)
             group.add_argument(
                 option_name,
                 metavar=opt_key,
@@ -205,7 +243,7 @@ def main():
         plugins=tests,
         skips=skips,
         allow_includes=not args.disable_includes,
-        vars_dirs=[x.strip() for x in args.vars_dirs.split(",")] if getattr(args, "vars_dirs", None) else None,
+        vars_dirs=[x.strip() for x in args.vars_dirs.split(",")] if args.vars_dirs else None,
     )
 
     for plugin_cls in PluginsManager().plugins_classes:
@@ -213,7 +251,7 @@ def main():
         options = copy.deepcopy(plugin_cls.options)
         for opt_key, opt_val in options.items():
             option_name = "{name}:{key}".format(name=name, key=opt_key)
-            if option_name not in args:
+            if option_name not in vars(args):
                 continue
 
             val = getattr(args, option_name)
@@ -255,3 +293,7 @@ def main():
         # If something found - exit code must be 1, otherwise 0
         sys.exit(1)
     sys.exit(0)
+
+
+if __name__ == "__main__":  # pragma: no cover - invoked only via `python -m gixy.cli.main`
+    main()

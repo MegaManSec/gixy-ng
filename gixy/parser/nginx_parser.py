@@ -146,42 +146,6 @@ class NginxParser(object):
         self._path_stack = current_path
         return root
 
-    def parse(self, content, root=None, path_info=None):
-        if path_info is not None:
-            self._path_stack = path_info
-
-        if not root:
-            root = block.Root()
-        try:
-            parsed = self.parser.parse(content)
-        except ParseException as e:
-            error_msg = "char {char} (line:{line}, col:{col})".format(
-                char=e.loc, line=e.lineno, col=e.col
-            )
-            if path_info:
-                LOG.error(
-                    'Failed to parse config "{file}": {error}'.format(
-                        file=path_info, error=error_msg
-                    )
-                )
-            else:
-                LOG.error("Failed to parse config: {error}".format(error=error_msg))
-            raise InvalidConfiguration(error_msg)
-
-        if len(parsed) and isinstance(parsed[0], dict) and parsed[0].get('kind') == "file_delimiter":
-            #  Were parse nginx dump
-            LOG.info("Switched to parse nginx configuration dump.")
-            root_filename = self._prepare_dump(parsed)
-            if self.path_info:
-                self._path_stack = path_info # XXX: hack because parse() is called in tests without setting _path_stack
-            self.is_dump = True
-            self.cwd = os.path.dirname(root_filename)
-            parsed = self.configs[root_filename]
-
-        self.parse_block(parsed, root)
-        self._path_stack = path_info
-        return root
-
     def parse_block(self, parsed_block, parent):
         for node in parsed_block:
             if not isinstance(node, dict):
@@ -198,6 +162,7 @@ class NginxParser(object):
                 continue
 
             parsed_name = node.get('name')
+            parsed_line = node.get('line')
             if parsed_type == 'block':
                 parsed_args = [node.get('args', []), node.get('children', [])]
             elif parsed_type == 'directive':
@@ -219,6 +184,9 @@ class NginxParser(object):
                 parsed_type, parsed_name, parsed_args
             )
             if directive_inst:
+                # Set line number and file path
+                directive_inst.line = parsed_line
+                directive_inst.file = self.path_info
                 parent.append(directive_inst)
 
     def directive_factory(self, parsed_type, parsed_name, parsed_args):

@@ -62,12 +62,26 @@ class BaseFormatter(object):
         for report in result.values():
             if report['directives']:
                 config = self._resolve_config(root, report['directives'])
+                # Extract location info from first directive with line/file info
+                location = self._extract_location(report['directives'])
             else:
                 config = ''
+                location = None
 
             del report['directives']
             report['config'] = config
+            report['location'] = location
             yield report
+
+    def _extract_location(self, directives):
+        """Extract file and line info from directives for display."""
+        for directive in directives:
+            if hasattr(directive, 'line') and directive.line is not None:
+                return {
+                    'file': getattr(directive, 'file', None),
+                    'line': directive.line,
+                }
+        return None
 
     def _resolve_config(self, root, directives):
         points = set()

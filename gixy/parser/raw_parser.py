@@ -192,6 +192,7 @@ class RawParser(object):
                     'name': directive_name,
                     'args': list(args),
                     'children': children,
+                    'line': node.get('line'),
                 }
                 result.append(normalized)
             else:
@@ -206,7 +207,7 @@ class RawParser(object):
                     continue
 
                 if directive_name == 'include':
-                    result.append({'kind': 'include', 'name': 'include', 'args': args})
+                    result.append({'kind': 'include', 'name': 'include', 'args': args, 'line': node.get('line')})
                     continue
 
                 if directive_name.endswith('_lua_block'):
@@ -220,11 +221,12 @@ class RawParser(object):
                         'args': [],
                         'children': [],
                         'raw': raw,
+                        'line': node.get('line'),
                     })
                     continue
 
                 # Regular directive
-                result.append({'kind': 'directive', 'name': directive_name, 'args': args})
+                result.append({'kind': 'directive', 'name': directive_name, 'args': args, 'line': node.get('line')})
 
         return result
 

@@ -49,6 +49,7 @@ setup(
     install_requires=install_requires,
     extras_require={
         "tests": install_requires + tests_requires,
+        "rich": ["rich>=13.0.0"],  # Optional: beautiful terminal output
     },
     entry_points={
         "console_scripts": ["gixy=gixy.cli.main:main"],

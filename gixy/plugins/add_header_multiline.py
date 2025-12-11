@@ -23,6 +23,8 @@ class add_header_multiline(Plugin):
 
     def audit(self, directive: AddHeaderDirective):
         for header, value in directive.headers.items():
+            if value is None:
+                continue
             if "\n\x20" in value or "\n\t" in value:
                 self.add_issue(directive=directive)
                 break

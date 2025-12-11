@@ -5,7 +5,12 @@ from gixy.directives.block import *
 
 
 def _parse(config):
-    return NginxParser(cwd='', allow_includes=False).parse_string(config)
+    return NginxParser(cwd="", allow_includes=False).parse_string(config)
+
+
+def _parse_via_compat_parse(config):
+    """Use the deprecated NginxParser.parse() alias for backward-compat tests."""
+    return NginxParser(cwd="", allow_includes=False).parse(config)
 
 
 @pytest.mark.parametrize('config,expected', zip(
@@ -170,6 +175,48 @@ add_header X-Foo bar;
     names = [c.name for c in server.children]
     assert 'listen' in names
     assert 'add_header' in names
+
+
+@pytest.mark.parametrize("config", [
+    'user http;',
+    'location / {}',
+])
+def test_parse_alias_matches_parse_string_for_simple_configs(config):
+    tree_direct = _parse(config)
+    tree_compat = _parse_via_compat_parse(config)
+
+    # Both APIs should return a Root with a single child of the same directive type.
+    assert isinstance(tree_direct, Root)
+    assert isinstance(tree_compat, Root)
+    assert len(tree_direct.children) == len(tree_compat.children) == 1
+    assert type(tree_direct.children[0]) is type(tree_compat.children[0])
+
+
+def test_parse_alias_handles_dump_same_as_parse_string():
+    config = '''
+# configuration file /etc/nginx/nginx.conf:
+http {
+    include sites/*.conf;
+}
+
+# configuration file /etc/nginx/conf.d/listen:
+listen 80;
+
+# configuration file /etc/nginx/sites/default.conf:
+server {
+    include conf.d/listen;
+}
+    '''
+
+    tree_direct = _parse(config)
+    tree_compat = _parse_via_compat_parse(config)
+
+    # Both trees should have the same high-level shape for dump parsing.
+    assert isinstance(tree_direct, Root)
+    assert isinstance(tree_compat, Root)
+    assert len(tree_direct.children) == len(tree_compat.children) == 1
+    assert isinstance(tree_direct.children[0], HttpBlock)
+    assert isinstance(tree_compat.children[0], HttpBlock)
 
 def assert_config(config, expected):
     tree = _parse(config)

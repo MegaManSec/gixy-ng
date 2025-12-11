@@ -31,6 +31,8 @@ class Directive:
         self.parent = None
         self.args = args
         self._raw = raw
+        self.line = None  # Line number in source file
+        self.file = None  # Source file path
 
     def set_parent(self, parent):
         """Set parent block for this directive"""
