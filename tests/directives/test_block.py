@@ -124,7 +124,7 @@ return 301 /$1/$2;
     assert directive.variable == '$var'
     assert directive.operand == '~*'
     assert directive.value == '(a)(b)'
-    assert len(directive.variables) == 2
+    assert len(directive.variables[0].value.parsed) == 2
 
 
 def test_if_modifier():

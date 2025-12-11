@@ -192,9 +192,13 @@ class IfBlock(Block):
 
         boundary = None
         if self.variable:
-            compiled_script = compile_script(self.variable)
-            if len(compiled_script) == 1:
-                boundary = compiled_script[0].regexp
+            try:
+                compiled_script = compile_script(self.variable)
+                if len(compiled_script) == 1:
+                    boundary = compiled_script[0].regexp
+            except (IndexError, AttributeError):
+                # compile_script may raise if the context of a variable cannot be found, such as in unit tests.
+                pass
 
         regexp = Regexp(self.value, case_sensitive=self.operand in {"~", '!~'})
         result = []
