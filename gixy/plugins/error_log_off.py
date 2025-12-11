@@ -1,4 +1,4 @@
-"""Module for try_files_is_evil_too plugin."""
+"""Module for error_log_off plugin."""
 
 import gixy
 from gixy.plugins.plugin import Plugin
@@ -7,9 +7,7 @@ from gixy.plugins.plugin import Plugin
 class error_log_off(Plugin):
     """
     Insecure example:
-        location / {
-            try_files $uri $uri/ /index.php$is_args$args;
-        }
+        error_log off;
     """
 
     summary = "The error_log directive does not take the off parameter."

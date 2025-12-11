@@ -1,4 +1,4 @@
-"""Module for try_files_is_evil_too plugin."""
+"""Module for worker_rlimit_nofile_vs_connections plugin."""
 
 import gixy
 from gixy.plugins.plugin import Plugin
