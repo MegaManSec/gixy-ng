@@ -13,8 +13,6 @@ location / {
 }
 ```
 
---8<-- "en/snippets/nginx-extras-cta.md"
-
 ## Good Example
 
 ```nginx

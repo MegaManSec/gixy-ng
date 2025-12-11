@@ -119,5 +119,3 @@ server {
 3. **Use the correct group numbers** - remember that group numbering starts at 1, and `$0` is not available in NGINX
 4. **Remember that non-capturing groups don't create references** - patterns like `(?:...)`, `(?i)`, `(?=...)` don't create numbered groups
 5. **Test your regex patterns** to ensure they capture what you expect
-
---8<-- "en/snippets/nginx-extras-cta.md"

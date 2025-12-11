@@ -49,5 +49,3 @@ location ~ \.php$ {
 ```
 
 This way, the regex will match only URLs that end with `.php`.
-
---8<-- "en/snippets/nginx-extras-cta.md"

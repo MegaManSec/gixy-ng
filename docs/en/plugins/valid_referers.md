@@ -21,5 +21,3 @@ E.g.:
   - a request with opaque origin, `data:` scheme, for example.
 
 So, by using `none` as a valid referer, you nullify any attempts in refferer validation.
-
---8<-- "en/snippets/nginx-extras-cta.md"

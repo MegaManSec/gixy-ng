@@ -37,5 +37,3 @@ Choose defaults that align with least privilege (deny by default when controllin
 ## Why it matters
 
 Explicit defaults make behavior predictable and prevent accidental allow/deny gaps when new keys appear or inputs vary unexpectedly.
-
---8<-- "en/snippets/nginx-extras-cta.md"

@@ -52,5 +52,3 @@ If you're serving dynamic content where files change frequently, or using a RAM 
 ## References
 
 - [nginx documentation: open_file_cache](https://nginx.org/en/docs/http/ngx_http_core_module.html#open_file_cache)
-
---8<-- "en/snippets/nginx-extras-cta.md"

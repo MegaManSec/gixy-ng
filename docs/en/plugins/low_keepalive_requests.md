@@ -31,5 +31,3 @@ Or simply omit the directive to use nginx's default (1000 since nginx 1.19.10).
 - [nginx documentation: keepalive_requests](https://nginx.org/en/docs/http/ngx_http_core_module.html#keepalive_requests)
 - [nginx ticket #2155: Increase default keepalive_requests](https://trac.nginx.org/nginx/ticket/2155)
 - [Debugging failures of HTTP/2 in Burp, mitmproxy, and browsers](https://joshua.hu/http2-burp-proxy-mitmproxy-nginx-failing-load-resources-chromium#nginx-keepalive_requests)
---8<-- "en/snippets/nginx-extras-cta.md"
-

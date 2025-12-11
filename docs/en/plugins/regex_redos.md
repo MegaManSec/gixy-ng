@@ -40,5 +40,3 @@ location ~ ^/a+$ {
 
 - [OWASP: Regular expression Denial of Service](https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS)
 - [Cloudflare: Details of the Cloudflare outage on July 2, 2019](https://blog.cloudflare.com/details-of-the-cloudflare-outage-on-july-2-2019/) - a famous ReDoS incident
-
---8<-- "en/snippets/nginx-extras-cta.md"

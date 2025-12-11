@@ -15,7 +15,7 @@ add_header Content-Security-Policy "
     img-src data: https://yastatic.net;
     font-src data: https://yastatic.net;";
 
-# https://nginx-extras.getpagespeed.com/modules/headers-more/
+# https://github.com/openresty/headers-more-nginx-module?tab=readme-ov-file#more_set_headers
 more_set_headers -t 'text/html text/plain'
     'X-Foo: Bar
         multiline';
@@ -52,5 +52,3 @@ add_header Content-Security-Policy $csp;
 This keeps your config readable while producing a valid single-line header.
 
 See also: [ServerFault: How to split nginx config across multiple lines](https://serverfault.com/questions/780075/how-to-split-the-nginx-config-across-multiple-lines)
- 
---8<-- "en/snippets/nginx-extras-cta.md"

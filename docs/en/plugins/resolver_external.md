@@ -33,5 +33,3 @@ resolver_timeout 5s;
 - External resolvers increase the attack surface for response spoofing
 - Poisoned cache entries can silently redirect traffic to arbitrary upstreams
 - A local resolver (e.g., `unbound`, `dnsmasq`) on loopback significantly mitigates this risk
-
---8<-- "en/snippets/nginx-extras-cta.md"

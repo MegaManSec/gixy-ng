@@ -57,13 +57,12 @@ new-headers
 ```
 
 ## What can I do?
+
 There are several ways to solve this problem:
  - duplicate important headers;
  - set all headers at one level (`server` section is a good choice)
 
---8<-- "en/snippets/nginx-extras-cta.md"
-
-### CLI and config options
+## CLI and config options
 
 - `--add-header-redefinition-headers headers` (Default: unset): Comma-separated, case-insensitive allowlist of headers to report when dropped. When unset, all dropped parent headers are reported. Example: `--add-header-redefinition-headers x-frame-options,content-security-policy`.
 

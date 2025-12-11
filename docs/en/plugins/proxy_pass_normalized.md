@@ -49,5 +49,3 @@ location ~ ^/api/(.*)$ {
 ## Why it matters
 
 Normalizing and decoding can alter how the upstream interprets requests, especially for security-sensitive routing. By removing the path from `proxy_pass` or carefully controlling it with variables, you reduce unexpected behavior.
-
---8<-- "en/snippets/nginx-extras-cta.md"

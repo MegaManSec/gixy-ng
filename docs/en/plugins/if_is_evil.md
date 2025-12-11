@@ -55,7 +55,7 @@ location @other {
 }
 ```
 
-In some cases it may be good idea to use embedded scripting modules ([embedded perl](https://nginx.org/en/docs/http/ngx_http_perl_module.html), or [Lua module](https://nginx-extras.getpagespeed.com/lua-scripting/)) to do the scripting.
+In some cases it may be good idea to use embedded scripting modules ([embedded perl](https://nginx.org/en/docs/http/ngx_http_perl_module.html), or [Lua module](https://docs.nginx.com/nginx/admin-guide/dynamic-modules/lua/)) to do the scripting.
 
 ## Examples
 
@@ -153,5 +153,3 @@ If you read all of the above and still want to use if:
 * Do proper testing.
 
 You were warned.
-
---8<-- "en/snippets/nginx-extras-cta.md"
