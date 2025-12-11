@@ -91,19 +91,20 @@ class alias_traversal(Plugin):
 
                 if alias_has_slash_before:
                     # location /bar(.*) ~ { alias /foo/$1; }
+                    # only dangerous if the captured part can start with "."
                     if part.can_startswith("."):
                         if part.can_contain("/"):
                             # location /site(.*) ~ { alias /lol/$1; }
                             self.report_issue(directive, location, gixy.severity.HIGH)
                         else:
-                            # location /site([^/]*) ~ { alias /lol/$1 };
+                            # location /site([^/]*) ~ { alias /lol/$1; }
                             self.report_issue(directive, location, gixy.severity.MEDIUM)
-                    else:
-                        # location /site(.*) ~ { alias /lol$1; }
-                        self.report_issue(directive, location, gixy.severity.MEDIUM)
                 else:
-                     # location /bar(.*) { alias /foo$1; }
-                    self.report_issue(directive, location, gixy.severity.MEDIUM)
+                    alias_has_slash_before = str(prev_part.value).endswith("/")
+
+                    if not alias_has_slash_before and not part.must_startswith("/"):
+                        # location /site/(.*) ~ { alias /lol$1; }
+                        self.report_issue(directive, location, gixy.severity.MEDIUM)
 
             else:
                 alias_has_slash_before = str(prev_part.value).endswith("/")
