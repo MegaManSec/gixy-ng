@@ -15,8 +15,8 @@ def test_cli_help(monkeypatch, capsys):
     """
     Test that running the CLI with --help displays usage information.
     """
-    # Set sys.argv to simulate "pixy --help"
-    monkeypatch.setattr(sys, "argv", ["pixy", "--help"])
+    # Set sys.argv to simulate "gixy --help"
+    monkeypatch.setattr(sys, "argv", ["gixy", "--help"])
 
     # If the CLI prints help and then exits, SystemExit is expected.
     with pytest.raises(SystemExit) as e:

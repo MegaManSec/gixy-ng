@@ -101,18 +101,8 @@ def _get_cli_parser():
         help="Report issues of a given severity level or higher (-l for LOW, -ll for MEDIUM, -lll for HIGH)",
     )
 
-    # Determine available formatters first, then pick default
-    available_formatters = formatters().keys()
+    default_formatter = "console" if sys.stdout.isatty() else "text"
 
-    # Use rich_console as default for TTY if available, fallback to console
-    if sys.stdout.isatty():
-        # Only use rich_console if it's actually registered (all imports succeeded)
-        if "rich_console" in available_formatters:
-            default_formatter = "rich_console"
-        else:
-            default_formatter = "console"
-    else:
-        default_formatter = "text"
     parser.add_argument(
         "-f",
         "--format",
