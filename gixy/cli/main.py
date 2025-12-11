@@ -102,6 +102,7 @@ def _get_cli_parser():
     )
 
     default_formatter = "console" if sys.stdout.isatty() else "text"
+    available_formatters = formatters().keys()
 
     parser.add_argument(
         "-f",

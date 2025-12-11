@@ -148,16 +148,6 @@ class LocationBlock(Block):
         return result
 
     def needs_anchor(self):
-        r"""
-        Check if the regex is intended to match a file extension.
-        This method looks for an unanchored pattern that ends with a literal dot
-        followed by one or more alphanumeric characters. For example, it would detect patterns
-        like r'\.php' or r'\.[A-Za-z0-9]+', and return True only if the regex is not anchored at the end.
-
-        Returns:
-            bool: True if the regex ends with a file extension pattern and is unanchored, False otherwise.
-        """
-
         regexp = Regexp(self.path, case_sensitive=self.modifier == "~")
         return regexp.needs_tail_anchor()
 
