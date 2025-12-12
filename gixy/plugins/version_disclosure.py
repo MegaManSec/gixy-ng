@@ -11,7 +11,7 @@ class version_disclosure(Plugin):
     description = ("Using server_tokens on; or server_tokens build;  allows an "
                    "attacker to learn the version of NGINX you are running, which can "
                    "be used to exploit known vulnerabilities.")
-    help_url = 'https://gixy.getpagespeed.com/en/plugins/version_disclosure/'
+    help_url = 'https://gixy.io/plugins/version_disclosure/'
     directives = ['server_tokens']
     supports_full_config = True
 

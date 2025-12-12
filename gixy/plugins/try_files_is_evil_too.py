@@ -15,7 +15,7 @@ class try_files_is_evil_too(Plugin):
     summary = "The try_files directive is evil without open_file_cache"
     severity = gixy.severity.MEDIUM
     description = "The try_files directive introduces performance overhead."
-    help_url = "https://www.getpagespeed.com/server-setup/nginx-try_files-is-evil-too"
+    help_url = "https://gixy.io/plugins/try_files_is_evil_too/"
     directives = ["try_files"]
 
     def audit(self, directive):

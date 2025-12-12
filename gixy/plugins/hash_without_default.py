@@ -7,7 +7,7 @@ class hash_without_default(Plugin):
     summary = "Detect when a hash block (map, geo) is used without a default value."
     severity = gixy.severity.MEDIUM
     description = "A hash block without a default value may allow the bypassing of security controls."
-    help_url = "https://gixy.getpagespeed.com/en/plugins/hash_without_default/"
+    help_url = "https://gixy.io/plugins/hash_without_default/"
     directives = ["map", "geo"]
 
     def __init__(self, config):

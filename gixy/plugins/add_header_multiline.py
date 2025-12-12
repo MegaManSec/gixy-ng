@@ -18,7 +18,7 @@ class add_header_multiline(Plugin):
         "Multi-line headers are deprecated (see RFC 7230). "
         "Some clients never supports them (e.g. IE/Edge)."
     )
-    help_url = "https://github.com/dvershinin/gixy/blob/master/docs/en/plugins/addheadermultiline.md"
+    help_url = "https://gixy.io/plugins/add_header_multiline/"
     directives = ["add_header", "more_set_headers"]
 
     def audit(self, directive: AddHeaderDirective):

@@ -44,7 +44,7 @@ class regex_redos(Plugin):
         'allow an nginx server to be denial-of-service attacked with very low '
         'resources (also known as ReDoS).'
     )
-    help_url = 'https://gixy.getpagespeed.com/en/plugins/regex_redos/'
+    help_url = 'https://gixy.io/plugins/regex_redos/'
     directives = ['location']  # XXX: Missing server_name, rewrite, if, map, proxy_redirect
     options = {
         'url': ""

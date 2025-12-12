@@ -19,7 +19,7 @@ class worker_rlimit_nofile_vs_connections(Plugin):
         "The worker_rlimit_nofile should be at least twice than worker_connections."
     )
     help_url = (
-        "https://gixy.getpagespeed.com/en/plugins/worker_rlimit_nofile_vs_connections/"
+        "https://gixy.io/plugins/worker_rlimit_nofile_vs_connections/"
     )
     directives = ["worker_connections"]
 

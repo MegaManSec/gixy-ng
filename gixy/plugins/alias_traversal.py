@@ -25,7 +25,7 @@ class alias_traversal(Plugin):
         "separator could lead to path traversal vulnerability."
     )
     help_url = (
-        "https://github.com/dvershinin/gixy/blob/master/docs/en/plugins/aliastraversal.md"
+        "https://gixy.io/plugins/alias_traversal/"
     )
     directives = ["alias"]
 

@@ -183,7 +183,7 @@ kubectl exec -it my-release-nginx-ingress-controller-54d96cb5cd-pvhx5 -- /bin/ba
 >> Problem: [version_disclosure] Do not enable server_tokens on or server_tokens build
 Severity: HIGH
 Description: Using server_tokens on; or server_tokens build;  allows an attacker to learn the version of NGINX you are running, which can be used to exploit known vulnerabilities.
-Additional info: https://gixy.getpagespeed.com/en/plugins/version_disclosure/
+Additional info: https://gixy.io/plugins/version_disclosure/
 Reason: Using server_tokens value which promotes information disclosure
 Pseudo config:
 

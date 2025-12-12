@@ -25,7 +25,7 @@ class add_header_redefinition(Plugin):
     severity = gixy.severity.LOW
     description = ('"add_header" replaces ALL parent headers. '
                    'See documentation: https://nginx.org/en/docs/http/ngx_http_headers_module.html#add_header')
-    help_url = 'https://github.com/dvershinin/gixy/blob/master/docs/en/plugins/addheaderredefinition.md'
+    help_url = 'https://gixy.io/plugins/add_header_redefinition/'
     directives = ['server', 'location', 'if']
     # headers: optional set/list/tuple of header names to scope reporting to
     # When empty, all dropped headers are reported. Case-insensitive; values are

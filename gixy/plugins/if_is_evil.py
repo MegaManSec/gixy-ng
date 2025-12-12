@@ -14,7 +14,7 @@ class if_is_evil(Plugin):
     description = 'Directive "if" has problems when used in location context, in some cases it does not do what you ' \
                   'expect but something completely different instead. In some cases it even segfaults. It is ' \
                   'generally a good idea to avoid it if possible.'
-    help_url = 'https://github.com/dvershinin/gixy/blob/master/docs/en/plugins/if_is_evil.md'
+    help_url = 'https://gixy.io/plugins/if_is_evil/'
     directives = []
 
     def audit(self, directive):
