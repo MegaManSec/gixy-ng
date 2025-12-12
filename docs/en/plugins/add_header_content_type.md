@@ -13,7 +13,7 @@ This may result in duplicate `Content-Type` headers if your backend sets it.
 default_type text/plain;
 ```
 
-## Exception
+## Exceptions
 
 Using `add_header Content-Type` in combination with any `*_hide_header Content-Type` directive is safe and will not trigger this check:
 

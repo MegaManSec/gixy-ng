@@ -1,4 +1,4 @@
-# gixy-ng: NGINX security scanner and configuration checker
+# Gixy-ng: NGINX Security Scanner & Configuration Checker for Security Audits
 
 [![Mozilla Public License 2.0](https://img.shields.io/badge/license-MPLv2.0-brightgreen?style=flat-square)](https://github.com/megamansec/gixy-ng/blob/master/LICENSE)
 [![Python tests](https://github.com/megamansec/gixy-ng/actions/workflows/pythonpackage.yml/badge.svg)](https://github.com/megamansec/gixy-ng/actions/workflows/pythonpackage.yml)
@@ -7,24 +7,16 @@
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/megamansec/gixy-ng.svg?style=flat-square)](https://github.com/megamansec/gixy-ng/pulls)
 
 ## Overview
-<img align="right" width="192" height="192" src="/gixy.jpg">
+<img align="right" width="192" height="192" src="https://gixy.io/imgs/gixy.jpg">
 
-gixy-ng is a maintained fork of the original Gixy NGINX security scanner and configuration checker. It statically analyzes your NGINX configuration to find security misconfigurations and vulnerabilities such as SSRF, HTTP response splitting, host header spoofing, and version disclosure before they reach production.
+The Gixy-ng scanner is a maintained fork of the original Gixy NGINX security scanner and configuration checker. Unlike the original Gixy scanner, Gixy-ng is actively maintained with bug fixes, new checks, and more features.
+NGINX configuration security scanning allows you to statically analyze your NGINX configuration to find security misconfigurations and vulnerabilities such as SSRF, HTTP response splitting, host header spoofing, and version disclosure before they reach production.
 
-The main goal of gixy-ng is to automate NGINX configuration security checks and prevent misconfiguration.
-
-## Why you need an NGINX security scanner
-
-Unlike running `nginx -t`, which  only checks syntax, gixy-ng analyzes your configuration not security.
-With gixy-ng, you can perform an automated NGINX configuration security review that can run locally or in CI/CD on every change.
-
-Currently supported Python versions are 3.6 through 3.13.
-
-Disclaimer: Gixy is well tested only on GNU/Linux, other OSs may have some issues.
+The main goal of Gixy-ng is to automate NGINX configuration security checks and prevent misconfiguration.
 
 ## What it can do
 
-Right now Gixy can find:
+Gixy-ng can can find various nginx configuration security issues, as well as nginx configuration performance issues, based on your `nginx.conf` and other nginx configuration files. The following plugins are supported to detect these misconfigurations
 
 *   [[add_header_content_type] Setting Content-Type via add_header](plugins/add_header_content_type.md)
 *   [[add_header_multiline] Multiline response headers](plugins/add_header_multiline.md)
@@ -51,7 +43,7 @@ Right now Gixy can find:
 *   [[version_disclosure] Using insecure values for server_tokens](plugins/version_disclosure.md)
 *   [[worker_rlimit_nofile_vs_connections] `worker_rlimit_nofile` must be at least twice `worker_connections`](plugins/worker_rlimit_nofile_vs_connections.md)
 
-You can find things that Gixy is learning to detect at [Issues labeled with "new plugin"](https://github.com/megamansec/gixy-ng/issues?q=is%3Aissue+is%3Aopen+label%3A%22new+plugin%22)
+Something not detected? Please open an [issues labeled with "new plugin"](https://github.com/megamansec/gixy-ng/issues?q=is%3Aissue+is%3Aopen+label%3A%22new+plugin%22).
 
 ## Installation
 
@@ -71,7 +63,7 @@ pip install gixy-ng
 
 ## Usage
 
-By default, gixy-ng (the `gixy` CLI) will try to analyze your NGINX configuration placed in `/etc/nginx/nginx.conf`.
+By default, Gixy-ng (the `gixy` CLI) will try to analyze your NGINX configuration placed in `/etc/nginx/nginx.conf`.
 
 But you can always specify the needed path:
 ```
@@ -148,15 +140,15 @@ echo "resolver 1.1.1.1;" | gixy -
 ```
 
 ### Docker usage
-Gixy is available as a Docker image [from the Docker hub](https://hub.docker.com/r/getpagespeed/gixy/). To
+Gixy-ng is available as a Docker image [from the Docker hub](https://hub.docker.com/r/getpagespeed/gixy/). To
 use it, mount the configuration that you want to analyse as a volume and provide the path to the
-configuration file when running the Gixy image.
+configuration file when running the Gixy-ng image.
 ```
 $ docker run --rm -v `pwd`/nginx.conf:/etc/nginx/conf/nginx.conf getpagespeed/gixy /etc/nginx/conf/nginx.conf
 ```
 
 If you have an image that already contains your nginx configuration, you can share the configuration
-with the Gixy container as a volume.
+with the Gixy-ng container as a volume.
 ```
 $  docker run --rm --name nginx -d -v /etc/nginx
 nginx:alpinef68f2833e986ae69c0a5375f9980dc7a70684a6c233a9535c2a837189f14e905
@@ -218,13 +210,21 @@ Total issues:
     Low: 0
     Medium: 0
     High: 4
-
 ```
+
+## Why Gixy-ng is Essential for NGINX Security and Compliance
+
+Unlike running `nginx -t`, which only checks syntax, Gixy-ng analyzes your configuration for security.
+With Gixy-ng, you can perform an automated NGINX configuration security review that can run locally or in CI/CD on every change.
+
+Currently supported Python versions are 3.6 through 3.13.
+
+Disclaimer: Gixy-ng is well tested only on GNU/Linux, other OSs may have some issues.
 
 
 ## Contributing
 
-Contributions to gixy-ng are always welcome! You can help us in different ways:
+Contributions to Gixy-ng are always welcome! You can help us in different ways:
   * Open an issue with suggestions for improvements and errors you're facing;
   * Fork this repository and submit a pull request;
   * Improve the documentation.

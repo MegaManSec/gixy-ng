@@ -1,11 +1,13 @@
-site_name: "gixy-ng: NGINX security scanner & config checker"
-site_description: "gixy-ng is a maintained fork of Gixy: an NGINX security scanner and configuration checker that finds security misconfigurations in nginx.conf."
+site_name: "Gixy-ng: NGINX Security Scanner & Configuration Checker for Security Audits"
+site_description: "Gixy-ng is a maintained fork of Gixy: an NGINX security scanner and configuration checker that audits and finds security misconfigurations in nginx.conf."
 site_url: https://gixy.io/
 repo_url: https://github.com/MegaManSec/gixy-ng
 theme:
   name: "material"
   language: en
   custom_dir: docs/overrides
+  favicon: favicon.ico
+  logo: imgs/gixy.png
   palette:
     scheme: slate
     primary: teal
@@ -24,9 +26,9 @@ plugins:
       reconfigure_material: true
       fallback_to_default: true
 nav:
-  - "NGINX security scanner": index.md
-  - "Configuration & usage": configuration.md
-  - "Variables & drop-ins": variables-dropins.md
+  - "NGINX Security Scanner": index.md
+  - "Configuration & Usage": configuration.md
+  - "Variables & Drop-ins": variables-dropins.md
   - Plugins:
     - plugins/add_header_content_type.md
     - plugins/add_header_multiline.md
@@ -63,7 +65,6 @@ markdown_extensions:
   - pymdownx.snippets:
       base_path:
         - docs
-        - docs_includes
       check_paths: true
   - toc:
       permalink: "¤"
