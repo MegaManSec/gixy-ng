@@ -1,3 +1,8 @@
+---
+title: "Duplicate Content-Type"
+description: "Prevent duplicate Content-Type headers in NGINX. Learn why using add_header for Content-Type is risky and how to use default_type correctly."
+---
+
 # [add_header_content_type] Using `add_header` for setting `Content-Type`
 
 ## Bad example

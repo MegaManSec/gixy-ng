@@ -1,3 +1,8 @@
+---
+title: "Header Inheritance Issues"
+description: "Fix missing security headers caused by NGINX add_header inheritance rules. Understand how nested location blocks can accidentally drop headers."
+---
+
 # [add_header_redefinition] Redefining of response headers by "add_header" directive
 
 Unfortunately, many people don't know how the inheritance of directives works. Most often this leads to misuse of the `add_header` directive while trying to add a new response header on the nested level.

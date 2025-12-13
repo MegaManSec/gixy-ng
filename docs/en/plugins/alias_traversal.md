@@ -1,3 +1,8 @@
+---
+title: "Alias Path Traversal"
+description: "Detect and fix directory traversal vulnerabilities in NGINX alias directives. Ensure your alias locations properly handle trailing slashes."
+---
+
 # [alias_traversal] Path traversal via misconfigured alias
 
 The [alias](https://nginx.ru/en/docs/http/ngx_http_core_module.html#alias) directive is used to replace path of the specified location.

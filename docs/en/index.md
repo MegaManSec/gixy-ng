@@ -1,3 +1,8 @@
+---
+#title: "" # Deliberately left blank
+description: "Open source NGINX security scanner and configuration checker for automating nginx.conf security audits and hardening against misconfigurations."
+---
+
 # Gixy-ng: NGINX Security Scanner & Configuration Checker for Security Audits
 
 ## Overview

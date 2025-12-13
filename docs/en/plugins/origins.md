@@ -1,3 +1,8 @@
+---
+title: "Weak Referer/Origin Regex"
+description: "Secure your CORS and Referer validation. Avoid weak regex patterns for Origin headers and learn how to use a safelist map instead."
+---
+
 # [origins] Problems with referrer/origin validation
 
 It's not unusual to use regex for `Referer` or `Origin` headers validation.

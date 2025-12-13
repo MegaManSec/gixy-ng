@@ -1,3 +1,8 @@
+---
+title: "Gixy-ng vs nginx -t: The Difference"
+description: "Understand the difference between nginx -t (syntax check) and Gixy-ng (security audit). Learn when to use which tool for safe NGINX deployments."
+---
+
 # NGINX Config Checker: Gixy-ng vs nginx -t
 
 When people say "NGINX configuration checker", they usually mean one of two things:

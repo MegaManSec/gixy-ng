@@ -1,5 +1,6 @@
-site_name: "Gixy-ng: NGINX Configuration Checker"
-site_description: "Gixy-ng is an open source NGINX security scanner and configuration checker. Run automated NGINX configuration security audits, find performance misconfigurations in nginx.conf, and harden your NGINX servers."
+site_name: "GixyNG: NGINX Configuration Security Checker"
+site_long_name: "GixyNG: NGINX Security Scanner & Configuration Checker"
+site_description: "GixyNG is an open source NGINX security scanner and configuration checker. Run automated NGINX configuration security audits, find performance misconfigurations in nginx.conf, and harden your NGINX servers."
 site_url: https://gixy.io/
 repo_url: https://github.com/MegaManSec/gixy-ng
 theme:
@@ -37,8 +38,8 @@ plugins:
           - en/plugins/*.md: Scanning plugin
 nav:
   - "NGINX Security Scanner": index.md
-  - "Configuration & Usage": configuration.md
-  - "Variables & Drop-ins": variables-dropins.md
+  - "Configuration & Usage Guide": configuration.md
+  - "Custom Variables & Drop-ins": variables-dropins.md
   - "Gixy-ng vs nginx -t": nginx-configuration-checker.md
   - Plugins:
     - plugins/add_header_content_type.md
@@ -83,3 +84,5 @@ extra_javascript:
   - extra/redirect-en.js
 extra:
   generator: false
+extra_css:
+  - extra.css

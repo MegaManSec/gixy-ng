@@ -1,3 +1,8 @@
+---
+title: "Multiline Response Headers"
+description: "Avoid deprecated multiline response headers in NGINX. Learn how to split long headers like Content-Security-Policy using variable nesting."
+---
+
 # [add_header_multiline] Multiline response headers
 
 You should avoid using multiline response headers, because:

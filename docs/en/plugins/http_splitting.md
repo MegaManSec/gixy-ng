@@ -1,3 +1,8 @@
+---
+title: "HTTP Response Splitting"
+description: "Detect and fix HTTP Response Splitting (CRLF injection) in NGINX. Identify unsafe variables in add_header and rewrite directives."
+---
+
 # [http_splitting] HTTP Splitting
 
 HTTP Splitting - attack that use improper input validation. It usually targets web application located behind Nginx (HTTP Request Splitting) or its users (HTTP Response Splitting).
