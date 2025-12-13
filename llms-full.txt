@@ -1,0 +1,1577 @@
+# GixyNG: NGINX Configuration Security Checker
+
+> GixyNG is an open source NGINX security scanner and configuration checker. Run automated NGINX configuration security audits, find performance misconfigurations in nginx.conf, and harden your NGINX servers.
+
+The Gixy-ng security scanner and configuration checker statically analyzes NGINX configurations to find security and performance issues before they reach production.
+
+# Overview and usage
+
+# Gixy-ng: NGINX Security Scanner & Configuration Checker for Security Audits
+
+## Overview
+
+Gixy-ng is an open source NGINX security scanner and configuration checker. It statically analyzes your NGINX configuration for security issues and misconfigurations before they reach production. Use Gixy-ng to run an automated NGINX configuration security audit and harden your nginx.conf against SSRF, HTTP response splitting, host header spoofing, version disclosure, and other vulnerabilities, as well as misconfigurations which lead to degraded performance and slow nginx servers.
+
+The main goal of Gixy-ng is to automate NGINX configuration security checks and prevent misconfiguration.
+
+### What is Gixy?
+
+Gixy is a popular NGINX configuration analyzer originally developed by Yandex. Gixy-ng is a maintained fork of Gixy that adds new checks, performance improvements, and support for modern Python and NGINX versions. If you are looking for an NGINX config scanner that is actively maintained, use Gixy-ng.
+
+## What it can do
+
+Gixy-ng can can find various nginx configuration security issues, as well as nginx configuration performance issues, based on your `nginx.conf` and other nginx configuration files. The following plugins are supported to detect these misconfigurations
+
+- [[add_header_content_type] Setting Content-Type via add_header](https://gixy.io/plugins/add_header_content_type/index.md)
+- [[add_header_multiline] Multiline response headers](https://gixy.io/plugins/add_header_multiline/index.md)
+- [[add_header_redefinition] Redefining of response headers by "add_header" directive](https://gixy.io/plugins/add_header_redefinition/index.md)
+- [[alias_traversal] Path traversal via misconfigured alias](https://gixy.io/plugins/alias_traversal/index.md)
+- [[allow_without_deny] Allow specified without deny](https://gixy.io/plugins/allow_without_deny/index.md)
+- [[default_server_flag] Missing default_server flag](https://gixy.io/plugins/default_server_flag/index.md)
+- [[error_log_off] `error_log` set to `off`](https://gixy.io/plugins/error_log_off/index.md)
+- [[hash_without_default] Missing default in hash blocks](https://gixy.io/plugins/hash_without_default/index.md)
+- [[host_spoofing] Request's Host header forgery](https://gixy.io/plugins/host_spoofing/index.md)
+- [[http_splitting] HTTP Response Splitting](https://gixy.io/plugins/http_splitting/index.md)
+- [[if_is_evil] If is evil when used in location context](https://gixy.io/plugins/if_is_evil/index.md)
+- [[invalid_regex] Invalid regex capture groups](https://gixy.io/plugins/invalid_regex/index.md)
+- [[low_keepalive_requests] Low `keepalive_requests`](https://gixy.io/plugins/low_keepalive_requests/index.md)
+- [[origins] Problems with referer/origin header validation](https://gixy.io/plugins/origins/index.md)
+- [[proxy_pass_normalized] `proxy_pass` path normalization issues](https://gixy.io/plugins/proxy_pass_normalized/index.md)
+- [[regex_redos] Regular expression denial of service (ReDoS)](https://gixy.io/plugins/regex_redos/index.md)
+- [[resolver_external] Using external DNS nameservers](https://gixy.io/plugins/resolver_external/index.md)
+- [[return_bypasses_allow_deny] Return directive bypasses allow/deny restrictions](https://gixy.io/plugins/return_bypasses_allow_deny/index.md)
+- [[ssrf] Server Side Request Forgery](https://gixy.io/plugins/ssrf/index.md)
+- [[try_files_is_evil_too] `try_files` directive is evil without open_file_cache](https://gixy.io/plugins/try_files_is_evil_too/index.md)
+- [[unanchored_regex] Unanchored regular expressions](https://gixy.io/plugins/unanchored_regex/index.md)
+- [[valid_referers] none in valid_referers](https://gixy.io/plugins/valid_referers/index.md)
+- [[version_disclosure] Using insecure values for server_tokens](https://gixy.io/plugins/version_disclosure/index.md)
+- [[worker_rlimit_nofile_vs_connections] `worker_rlimit_nofile` must be at least twice `worker_connections`](https://gixy.io/plugins/worker_rlimit_nofile_vs_connections/index.md)
+
+Something not detected? Please open an [issues labeled with "new plugin"](https://github.com/megamansec/gixy-ng/issues?q=is%3Aissue+is%3Aopen+label%3A%22new+plugin%22).
+
+## Installation
+
+### CentOS/RHEL and other RPM-based systems
+
+```
+yum -y install https://extras.getpagespeed.com/release-latest.rpm
+yum -y install gixy
+```
+
+#### Other systems
+
+Gixy is distributed on [PyPI](https://pypi.python.org/pypi/gixy-ng). The best way to install it is with pip:
+
+```
+pip install gixy-ng
+```
+
+## Usage
+
+By default, Gixy-ng (the `gixy` CLI) will try to analyze your NGINX configuration placed in `/etc/nginx/nginx.conf`.
+
+But you can always specify the needed path:
+
+```
+$ gixy /etc/nginx/nginx.conf
+
+==================== Results ===================
+
+Problem: [http_splitting] Possible HTTP-Splitting vulnerability.
+Description: Using variables that can contain "\n" may lead to http injection.
+Additional info: https://gixy.io/plugins/http_splitting/
+Reason: At least variable "$action" can contain "\n"
+Pseudo config:
+include /etc/nginx/sites/default.conf;
+
+    server {
+
+        location ~ /v1/((?<action>[^.]*)\.json)?$ {
+            add_header X-Action $action;
+        }
+    }
+
+
+==================== Summary ===================
+Total issues:
+    Unspecified: 0
+    Low: 0
+    Medium: 0
+    High: 1
+```
+
+Or skip some tests:
+
+```
+$ gixy --skips http_splitting /etc/nginx/nginx.conf
+
+==================== Results ===================
+No issues found.
+
+==================== Summary ===================
+Total issues:
+    Unspecified: 0
+    Low: 0
+    Medium: 0
+    High: 0
+```
+
+Or something else, you can find all other `gixy` arguments with the help command: `gixy --help`
+
+#### Plugin options
+
+Some plugins expose options which you can set via CLI flags or config file. CLI flags follow the pattern `--<PluginName>-<option>` with dashes, while config file uses `[PluginName]` sections with dashed keys.
+
+- `origins`:
+- `--origins-domains domains`: Comma-separated list of trusted registrable domains. Use `*` to disable third‑party checks. Example: `--origins-domains example.com,foo.bar`. Default: `*`.
+- `--origins-https-only true|false`: When true, only the `https` scheme is considered valid for `Origin`/`Referer`. Default: `false`.
+- `--origins-lower-hostname true|false`: Normalize hostnames to lowercase before validation. Default: `true`.
+- `add_header_redefinition`:
+- `--add-header-redefinition-headers headers`: Comma-separated allowlist of header names (case-insensitive). When set, only dropped headers from this list will be reported; when unset, all dropped headers are reported. Example: `--add-header-redefinition-headers x-frame-options,content-security-policy`. Default: unset (report all).
+
+Examples (config file):
+
+```
+[origins]
+domains = example.com, example.org
+https-only = true
+
+[add_header_redefinition]
+headers = x-frame-options, content-security-policy
+```
+
+You can also make `gixy` use pipes (stdin), like so:
+
+```
+echo "resolver 1.1.1.1;" | gixy -
+```
+
+### Docker usage
+
+Gixy-ng is available as a Docker image [from the Docker hub](https://hub.docker.com/r/getpagespeed/gixy/). To use it, mount the configuration that you want to analyse as a volume and provide the path to the configuration file when running the Gixy-ng image.
+
+```
+$ docker run --rm -v `pwd`/nginx.conf:/etc/nginx/conf/nginx.conf getpagespeed/gixy /etc/nginx/conf/nginx.conf
+```
+
+If you have an image that already contains your nginx configuration, you can share the configuration with the Gixy-ng container as a volume.
+
+```
+$  docker run --rm --name nginx -d -v /etc/nginx
+nginx:alpinef68f2833e986ae69c0a5375f9980dc7a70684a6c233a9535c2a837189f14e905
+
+$  docker run --rm --volumes-from nginx megamansec/gixy-ng /etc/nginx/nginx.conf
+
+==================== Results ===================
+No issues found.
+
+==================== Summary ===================
+Total issues:
+    Unspecified: 0
+    Low: 0
+    Medium: 0
+    High: 0
+```
+
+### Kubernetes usage
+
+Given you are using the official NGINX ingress controller, not the kubernetes one, you can use this <https://github.com/nginx/kubernetes-ingress>
+
+```
+kubectl exec -it my-release-nginx-ingress-controller-54d96cb5cd-pvhx5 -- /bin/bash -c "cat /etc/nginx/conf.d/*" | docker run -i getpagespeed/gixy -
+```
+
+```
+==================== Results ===================
+
+>> Problem: [version_disclosure] Do not enable server_tokens on or server_tokens build
+Severity: HIGH
+Description: Using server_tokens on; or server_tokens build;  allows an attacker to learn the version of NGINX you are running, which can be used to exploit known vulnerabilities.
+Additional info: https://gixy.io/plugins/version_disclosure/
+Reason: Using server_tokens value which promotes information disclosure
+Pseudo config:
+
+server {
+    server_name XXXXX.dev;
+    server_tokens on;
+}
+
+server {
+    server_name XXXXX.dev;
+    server_tokens on;
+}
+
+server {
+    server_name XXXXX.dev;
+    server_tokens on;
+}
+
+server {
+    server_name XXXXX.dev;
+    server_tokens on;
+}
+
+==================== Summary ===================
+Total issues:
+    Unspecified: 0
+    Low: 0
+    Medium: 0
+    High: 4
+```
+
+## Why Gixy-ng is Essential for NGINX Security and Compliance
+
+Unlike running `nginx -t`, which only checks syntax, Gixy-ng analyzes your configuration for security. With Gixy-ng, you can perform an automated NGINX configuration security review that can run locally or in CI/CD on every change.
+
+Currently supported Python versions are 3.6 through 3.13.
+
+Disclaimer: Gixy-ng is well tested only on GNU/Linux, other OSs may have some issues.
+
+## Contributing
+
+Contributions to Gixy-ng are always welcome! You can help us in different ways:
+
+- Open an issue with suggestions for improvements and errors you're facing in the [GitHub repository](https://github.com/MegaManSec/gixy-ng);
+- Fork this repository and submit a pull request;
+- Improve the documentation.
+
+Code guidelines:
+
+- Python code style should follow [pep8](https://www.python.org/dev/peps/pep-0008/) standards whenever possible;
+- Pull requests with new plugins must have unit tests for them.
+
+# Configuration & Usage Guide
+
+## Configuration (gixy.cfg)
+
+Gixy reads configuration from the following locations (first found wins):
+
+- `/etc/gixy/gixy.cfg`
+- `~/.config/gixy/gixy.conf`
+
+You can also pass a custom config path via `-c/--config` and write out a populated template with `--write-config`.
+
+Configuration files use simple `key = value` pairs, optional sections, and support lists with `[a, b, c]` syntax. Keys mirror long CLI flags, with dashes, for example `--disable-includes` becomes `disable-includes`.
+
+Note: the severity filter is CLI-only via `-l` repeats (e.g. `-l`, `-ll`, `-lll`). It is not read from the config file.
+
+## Managing plugins
+
+- **Run only selected plugins**: set `tests` to a comma-separated list of plugin class names.
+- **Skip specific plugins**: set `skips` to a comma-separated list of plugin class names.
+
+Examples:
+
+```
+# Only these plugins will run
+tests = if_is_evil, http_splitting
+
+# These plugins will be excluded from the run
+skips = origins, version_disclosure
+```
+
+## Plugin-specific options
+
+Plugin options can be provided as sectioned keys where the section name is the plugin class name written with hyphens (underscores replaced by hyphens). Keys inside sections also use hyphens. Examples:
+
+```
+[origins]
+domains = example.com, example.org
+https-only = true
+
+[regex-redos]
+url = ^/api/.*
+```
+
+The same effect can be achieved without sections by combining the plugin name and option with a dash, e.g. `origins-domains = ...`, but sections are easier to organize.
+
+## Other useful options
+
+- **Output format**: `format = console|text|json` (same as `-f/--format`)
+- **Write report to file**: `output = /path/to/report.txt` (same as `-o/--output`)
+- **Disable include processing**: `disable-includes = true` (same as `--disable-includes`)
+- **Custom variables directories**: `vars-dirs = [/etc/gixy/vars, ~/.config/gixy/vars]` (see "Custom variables drop-ins")
+
+## Full example
+
+```
+# gixy.cfg
+
+format = console
+output = /tmp/gixy-report.txt
+disable-includes = false
+
+# Limit analysis to a subset of plugins
+tests = if_is_evil, http_splitting
+
+# Skip some plugins
+skips = version_disclosure
+
+# Load custom variable definitions (see variables-dropins)
+vars-dirs = [/etc/gixy/vars, ~/.config/gixy/vars]
+
+[origins]
+domains = example.com, example.org
+https-only = true
+
+[regex-redos]
+url = ^/api/.*
+```
+
+# Variables & Drop-ins
+
+## Custom variables drop-ins
+
+Some third-party NGINX modules define additional variables (e.g. `$brotli_ratio`). By default, Gixy warns when it cannot resolve a variable. You can teach Gixy about extra variables via simple drop-in files.
+
+## Enabling drop-ins
+
+Provide one or more directories containing variable definitions using either CLI or config:
+
+- CLI: `--vars-dirs /etc/gixy/vars,~/.config/gixy/vars`
+- gixy.cfg: `vars-dirs = [/etc/gixy/vars, ~/.config/gixy/vars]`
+
+All files with `.cfg` or `.conf` extensions inside those directories are read.
+
+## File format
+
+Each non-empty, non-comment line defines one variable as `name value`. Supported value forms:
+
+- Quoted literal: `'...'` or `"..."` → treated as a literal value (non user-controlled)
+- Regex: `r'...'` or `r"..."` → a regular expression describing allowed content
+- `none`/`null` (case-insensitive) → mark as non user-controlled
+- Trailing comma after the value is tolerated
+
+Examples:
+
+```
+# /etc/gixy/vars/nginx-module-brotli.cfg
+brotli_ratio none
+
+# /etc/gixy/vars/nginx-module-foo.cfg
+foo_host "example.com"
+foo_uri  r'/[^\s]*',
+```
+
+Prefix variables are supported using names ending with `_` (like built-ins), e.g. `http_` will match `$http_foo`.
+
+## Notes
+
+- Drop-in variables override built-ins when names collide.
+- Only variables referenced during analysis are instantiated.
+- This mechanism affects variable resolution only; it does not change NGINX behavior.
+# Built-in plugins
+
+# [add_header_content_type] Using `add_header` for setting `Content-Type`
+
+## Bad example
+
+```
+add_header Content-Type text/plain;
+```
+
+This may result in duplicate `Content-Type` headers if your backend sets it.
+
+## Good example
+
+```
+default_type text/plain;
+```
+
+## Exceptions
+
+Using `add_header Content-Type` in combination with any `*_hide_header Content-Type` directive is safe and will not trigger this check:
+
+```
+proxy_hide_header Content-Type;
+add_header Content-Type "application/octet-stream";
+```
+
+This pattern is valid because `*_hide_header` (such as `proxy_hide_header`, `fastcgi_hide_header`, `uwsgi_hide_header`, `scgi_hide_header`, or `grpc_hide_header`) prevents the backend's `Content-Type` from being passed through, and `add_header` then sets a new one, avoiding duplicate headers.
+
+# [add_header_multiline] Multiline response headers
+
+You should avoid using multiline response headers, because:
+
+- they are deprecated (see [RFC 7230](https://tools.ietf.org/html/rfc7230#section-3.2.4));
+- some HTTP-clients and web browser never supported them (e.g. IE/Edge/etc.).
+
+## How can I find it?
+
+Misconfiguration example:
+
+```
+# https://nginx.org/en/docs/http/ngx_http_headers_module.html#add_header
+add_header Content-Security-Policy "
+    default-src: 'none';
+    script-src data: https://yastatic.net;
+    style-src data: https://yastatic.net;
+    img-src data: https://yastatic.net;
+    font-src data: https://yastatic.net;";
+
+# https://github.com/openresty/headers-more-nginx-module?tab=readme-ov-file#more_set_headers
+more_set_headers -t 'text/html text/plain'
+    'X-Foo: Bar
+        multiline';
+```
+
+## What can I do?
+
+Use variable nesting to split long headers across multiple lines in your config file while keeping the actual header value on a single line:
+
+```
+# Split a long CSP header across multiple lines using variables
+set $csp_default "default-src 'self'";
+set $csp_script "script-src 'self' https://cdn.example.com";
+set $csp_style "style-src 'self' https://cdn.example.com";
+set $csp_img "img-src 'self' data: https://cdn.example.com";
+set $csp_font "font-src 'self' https://cdn.example.com";
+
+set $csp "${csp_default}; ${csp_script}; ${csp_style}; ${csp_img}; ${csp_font}";
+add_header Content-Security-Policy $csp;
+```
+
+Or use progressive concatenation:
+
+```
+set $csp "default-src 'self'; ";
+set $csp "${csp}script-src 'self' https://cdn.example.com; ";
+set $csp "${csp}style-src 'self' https://cdn.example.com; ";
+set $csp "${csp}img-src 'self' data:; ";
+set $csp "${csp}font-src 'self'";
+
+add_header Content-Security-Policy $csp;
+```
+
+This keeps your config readable while producing a valid single-line header.
+
+See also: [ServerFault: How to split nginx config across multiple lines](https://serverfault.com/questions/780075/how-to-split-the-nginx-config-across-multiple-lines)
+
+# [add_header_redefinition] Redefining of response headers by "add_header" directive
+
+Unfortunately, many people don't know how the inheritance of directives works. Most often this leads to misuse of the `add_header` directive while trying to add a new response header on the nested level. This feature is mentioned in Nginx [docs](https://nginx.org/en/docs/http/ngx_http_headers_module.html#add_header):
+
+> There could be several `add_header` directives. These directives are inherited from the previous level if and only if there are no `add_header` directives defined on the current level.
+
+The logic is quite simple: if you set headers at one level (for example, in `server` section) and then at a lower level (let's say `location`) you set some other headers, then the first headers will be discarded.
+
+It's easy to check:
+
+- Configuration:
+
+```
+server {
+  listen 80;
+  add_header X-Frame-Options "DENY" always;
+  location / {
+      return 200 "index";
+  }
+
+  location /new-headers {
+    # Add special cache control
+    add_header Cache-Control "no-cache, no-store, max-age=0, must-revalidate" always;
+    add_header Pragma "no-cache" always;
+
+    return 200 "new-headers";
+  }
+}
+```
+
+- Request to location `/` (`X-Frame-Options` header is in server response):
+
+```
+GET / HTTP/1.0
+
+HTTP/1.1 200 OK
+Server: nginx/1.10.2
+Date: Mon, 09 Jan 2017 19:28:33 GMT
+Content-Type: application/octet-stream
+Content-Length: 5
+Connection: close
+X-Frame-Options: DENY
+
+index
+```
+
+- Request to location `/new-headers` (headers `Cache-Control` and `Pragma` are present, but there's no `X-Frame-Options`):
+
+```
+GET /new-headers HTTP/1.0
+
+
+HTTP/1.1 200 OK
+Server: nginx/1.10.2
+Date: Mon, 09 Jan 2017 19:29:46 GMT
+Content-Type: application/octet-stream
+Content-Length: 11
+Connection: close
+Cache-Control: no-cache, no-store, max-age=0, must-revalidate
+Pragma: no-cache
+
+new-headers
+```
+
+## What can I do?
+
+There are several ways to solve this problem:
+
+- duplicate important headers;
+- set all headers at one level (`server` section is a good choice)
+
+## CLI and config options
+
+- `--add-header-redefinition-headers headers` (Default: unset): Comma-separated, case-insensitive allowlist of headers to report when dropped. When unset, all dropped parent headers are reported. Example: `--add-header-redefinition-headers x-frame-options,content-security-policy`.
+
+Config file example:
+
+```
+[add_header_redefinition]
+headers = x-frame-options, content-security-policy
+```
+
+# [alias_traversal] Path traversal via misconfigured alias
+
+The [alias](https://nginx.ru/en/docs/http/ngx_http_core_module.html#alias) directive is used to replace path of the specified location. For example, with the following configuration:
+
+```
+location /i/ {
+    alias /data/w3/images/;
+}
+```
+
+On request of `/i/top.gif`, the file `/data/w3/images/top.gif` will be sent.
+
+But if the location doesn't end with directory separator (i.e. `/`):
+
+```
+location /i {
+    alias /data/w3/images/;
+}
+```
+
+On request of `/i../app/config.py`, the file `/data/w3/app/config.py` will be sent.
+
+In other words, the incorrect configuration of `alias` could allow an attacker to read file stored outside the target folder.
+
+## What can I do?
+
+It's pretty simple:
+
+- you must find all the `alias` directives;
+- make sure that the parent prefixed location ends with directory separator.
+- or if you want to map a single file make sure the location starts with a `=`, e.g. `=/i.gif` instead of `/i.gif`.
+
+# [allow_without_deny] `allow` without `deny`
+
+When a configuration block contains `allow` directive with some IP address or subnet, it most likely should also contain `deny all;` directive (or it should be enforced somewhere else). **Otherwise, there's basically no access limitation.**
+
+## Bad Example
+
+```
+location / {
+      root /var/www/;
+      allow 10.0.0.0/8;
+      . . .
+}
+```
+
+## Good Example
+
+```
+location / {
+      root /var/www/;
+      allow 10.0.0.0/8;
+      deny all;
+      . . .
+}
+```
+
+# [default_server_flag] Missing default_server on shared listen socket
+
+When two or more `server` blocks share the same `listen` address and port, one of them should be explicitly marked as `default_server` (or `default`). This eliminates ambiguity in which server handles requests that do not match a `server_name`.
+
+## How can I find it?
+
+Gixy reports an issue if it detects multiple `server` blocks listening on the same socket without any of them being marked as `default_server`.
+
+Misconfiguration example:
+
+```
+http {
+    server {
+        listen 80;
+        server_name a.test;
+    }
+
+    server {
+        listen 80;
+        server_name b.test;
+    }
+}
+```
+
+## What can I do?
+
+- Add the `default_server` flag to one `server` block among those sharing the same socket.
+
+Correct configuration example:
+
+```
+http {
+    server {
+        listen 80 default_server;
+        server_name a.test;
+    }
+
+    server {
+        listen 80;
+        server_name b.test;
+    }
+}
+```
+
+## References
+
+- NGINX `listen` directive: <https://nginx.org/en/docs/http/ngx_http_core_module.html#listen>
+
+# [error_log_off] `error_log` set to `off`
+
+A common misconception is that using the directive `error_log off` disables error logging. Unlike the `access_log` directive, `error_log` does not accept an `off` parameter. If you add `error_log` off to your configuration, NGINX will create a log file named "off" in the default configuration directory (typically `/etc/nginx`).
+
+Disabling the error log is generally not advised, as it provides crucial information for troubleshooting NGINX issues. However, if disk space is extremely limited and there’s a risk that logging could fill up the available space, you might opt to disable error logging. To do so, add the following directive in the main configuration context:
+
+```
+error_log /dev/null emerg;
+```
+
+Keep in mind that this setting takes effect only after NGINX reads and validates the configuration file. Therefore, during startup or when reloading the configuration, NGINX may still log errors to the default error log location (usually `/var/log/nginx/error.log`) until validation is complete. To change the default log directory permanently, use the `--error-log-path` (or `-e`) option when starting NGINX.
+
+# [hash_without_default] Missing default in hash blocks (`map`, `geo`)
+
+Hash-like blocks such as `map` and `geo` should define a safe `default` value. Without it, unexpected keys may fall through to an unintended state, potentially bypassing security controls.
+
+## Insecure examples
+
+```
+# No default → unknown keys inherit nothing/surprising behavior
+map $request_uri $allowed {
+    /admin 0;
+}
+
+# No default in geo
+geo $block_client {
+    192.0.2.0/24 1;
+}
+```
+
+## Safer alternatives
+
+```
+# Provide a safe default
+map $request_uri $allowed {
+    default 1;      # deny by default
+    /admin 0;       # allow only if set explicitly by later logic
+}
+
+# Provide a safe default in geo
+geo $block_client {
+    default 0;      # not blocked by default
+    192.0.2.0/24 1; # block these
+}
+```
+
+Choose defaults that align with least privilege (deny by default when controlling access).
+
+## Why it matters
+
+Explicit defaults make behavior predictable and prevent accidental allow/deny gaps when new keys appear or inputs vary unexpectedly.
+
+# [host_spoofing] Request's Host header forgery
+
+Often, an application located behind Nginx needs a correct `Host` header for URL generation (redirects, resources, links in emails etc.). Spoofing of this header may lead to a variety of problems, from phishing to SSRF.
+
+> Notice: your application may also use the `X-Forwarded-Host` request header for this functionality. In this case you have to ensure the header is set correctly;
+
+## How can I find it?
+
+Most of the time it's a result of using `$http_host` variable instead of `$host`, which are quite different:
+
+- `$host` - host in this order of precedence: host name from the request line, or host name from the "Host" request header field, or the server name matching a request;
+- `$http_host` - "Host" request header.
+
+Config sample:
+
+```
+location @app {
+  proxy_set_header Host $http_host;
+  # Other proxy params
+  proxy_pass http://backend;
+}
+```
+
+## What can I do?
+
+Luckily, all is quite obvious:
+
+- list all the correct server names in `server name` directive;
+- always use `$host` instead of `$http_host`.
+
+## Additional info
+
+- [Host of Troubles Vulnerabilities](https://hostoftroubles.com/)
+- [Practical HTTP Host header attacks](http://www.skeletonscribe.net/2013/05/practical-http-host-header-attacks.html)
+
+# [http_splitting] HTTP Splitting
+
+HTTP Splitting - attack that use improper input validation. It usually targets web application located behind Nginx (HTTP Request Splitting) or its users (HTTP Response Splitting).
+
+Vulnerability is created when an attacker can insert newline character `\n` or `\r` into request or into response, created by Nginx.
+
+## How can I find it?
+
+You should always pay attention to:
+
+- variables that are used in directives, responsible for the request creation (for they may contain CRLF), e.g. `rewrite`, `return`, `add_header`, `proxy_set_header` or `proxy_pass`;
+- `$uri` and `$document_uri` variables, and in which directives they are used, because these variables contain decoded URL-encoded value;
+- variables, that are selected from an exclusive range, e.g. `(?P<myvar>[^.]+)`.
+
+An example of configuration that contains variable, selected from an exclusive range:
+
+```
+server {
+    listen 80 default;
+
+    location ~ /v1/((?<action>[^.]*)\.json)?$ {
+        add_header X-Action $action;
+        return 200 "OK";
+    }
+}
+```
+
+Exploitation:
+
+```
+GET /v1/see%20below%0d%0ax-crlf-header:injected.json HTTP/1.0
+Host: localhost
+
+HTTP/1.1 200 OK
+Server: nginx/1.11.10
+Date: Mon, 13 Mar 2017 21:21:29 GMT
+Content-Type: application/octet-stream
+Content-Length: 2
+Connection: close
+X-Action: see below
+x-crlf-header:injected
+
+OK
+```
+
+As you can see, an attacker could add `x-crlf-header: injected` response header. This was possible because:
+
+- `add_header` doesn't encode or validate input value on suggestion that author knows about the consequences;
+- the path value is normalize before location processing;
+- `$action` value was given from a regexp with an exclusive range: `[^.]*`;
+- as the result, `$action` value is equal to `see below\r\nx-crlf-header:injected` and on its use the response header was added.
+
+## What can I do?
+
+- try to use safe variables, e.g. `$request_uri` instead of `$uri`;
+- forbid the use of the new line symbol in the exclusive range by using `/some/(?<action>[^/\s]+)` instead of `/some/(?<action>[^/]+`
+- it could be a good idea to validate `$uri` (only if you're sure you know what are you getting into).
+
+# [if_is_evil] If is Evil... when used in location context
+
+## Introduction
+
+Directive [`if`](https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#if) has problems **when used in location context**, in some cases it doesn't do what you expect but something completely different instead. In some cases it even segfaults. It's generally a good idea to avoid it if possible.
+
+The only 100% safe things which may be done inside if in a location context are:
+
+- [`return ...;`](https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#return)
+- [`rewrite ... last;`](https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#rewrite)
+- [`rewrite ... redirect;`](https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#rewrite)
+- [`rewrite ... permanent;`](https://nginx.org/en/docs/http/ngx_http_rewrite_module.html#rewrite)
+
+Anything else may cause unpredictable behavior, including potential SIGSEGV.
+
+It is important to note that the behavior of if is not inconsistent, given two identical requests it will not randomly fail on one and work on the other, with proper testing and understanding ifs *can* be used. The advice to use other directives where available still very much applies, though.
+
+There are cases where you cannot avoid using an if, for example, if you need to test a variable which has no equivalent directive.
+
+```
+if ($request_method = POST ) {
+    return 405;
+}
+if ($args ~ post=140){
+    rewrite ^ http://example.com/ permanent;
+}
+```
+
+## What to do instead
+
+Use the "return ...", "rewrite ... last", "rewrite ... redirect", or "rewrite ... permanent" if it suits your needs. You can allocate additional locations and `map` if you want to set variables based on conditions.
+
+In some cases, it's also possible to move `if`s to server level (where it's safe as only other rewrite module directives are allowed within it).
+
+E.g., the following may be used to safely change location which will be used to process request:
+
+```
+location / {
+    error_page 418 = @other;
+    recursive_error_pages on;
+
+    if ($something) {
+        return 418;
+    }
+
+    # some configuration
+    ...
+}
+
+location @other {
+    # some other configuration
+    ...
+}
+```
+
+In some cases it may be good idea to use embedded scripting modules ([embedded perl](https://nginx.org/en/docs/http/ngx_http_perl_module.html), or [Lua module](https://docs.nginx.com/nginx/admin-guide/dynamic-modules/lua/)) to do the scripting.
+
+## Examples
+
+Here are some examples which explain why if is evil. Don't try this at home. You were warned.
+
+```
+# Here is collection of unexpectedly buggy configurations to show that
+# if inside location is evil.
+
+# only second header will be present in response
+# not really bug, just how it works
+
+location /only-one-if {
+    set $true 1;
+
+    if ($true) {
+        add_header X-First 1;
+    }
+
+    if ($true) {
+        add_header X-Second 2;
+    }
+
+    return 204;
+}
+
+# request will be sent to backend without uri changed
+# to '/' due to if
+
+location /proxy-pass-uri {
+    proxy_pass http://127.0.0.1:8080/;
+
+    set $true 1;
+
+    if ($true) {
+        # nothing
+    }
+}
+
+# try_files wont work due to if
+
+location /if-try-files {
+     try_files  /file  @fallback;
+
+     set $true 1;
+
+     if ($true) {
+         # nothing
+     }
+}
+
+# nginx will SIGSEGV
+
+location /crash {
+
+    set $true 1;
+
+    if ($true) {
+        # fastcgi_pass here
+        fastcgi_pass  127.0.0.1:9000;
+    }
+
+    if ($true) {
+        # no handler here
+    }
+}
+
+# alias with captures isn't correcly inherited into implicit nested
+# location created by if
+
+location ~* ^/if-and-alias/(?<file>.*) {
+    alias /tmp/$file;
+
+    set $true 1;
+
+    if ($true) {
+        # nothing
+    }
+}
+```
+
+In case you think you found an example which isn't listed here - it's a good idea to report it to the [NGINX development mailing list](http://mailman.nginx.org/mailman/listinfo/nginx-devel).
+
+## Why this happens and still not fixed
+
+Directive "if" is part of rewrite module which evaluates instructions imperatively. On the other hand, NGINX configuration in general is declarative. At some point due to users demand an attempt was made to enable some non-rewrite directives inside "if", and this lead to situation we have now. It mostly works, but... see above.
+
+It looks like the only correct fix would be to disable non-rewrite directives inside if completely. It would break many configuration out there though, so wasn't done yet.
+
+## If you still want to use if inside location context
+
+If you read all of the above and still want to use if:
+
+- Please make sure you actually do understand how it works. Some basic idea may be found e.g. [here](http://agentzh.blogspot.com/2011/03/how-nginx-location-if-works.html).
+- Do proper testing.
+
+You were warned.
+
+# [invalid_regex] Using a nonexistent regex capture group
+
+When using regular expressions with capturing groups in NGINX directives like `rewrite` or within `if` conditions, you can reference these captured groups using `$1`, `$2`, etc. in replacement strings or subsequent directives. However, if you reference a capture group that doesn't exist in the regex pattern, NGINX will treat it as an empty string, which can lead to unexpected behavior.
+
+## How can I find it?
+
+You should check:
+
+- `rewrite` directives where the replacement string references capture groups (e.g., `$1`, `$2`) that don't exist in the regex pattern
+- `set` directives inside `if` blocks that reference capture groups from the `if` condition's regex pattern
+- Non-capturing groups like `(?:...)` or inline modifiers like `(?i)` which don't create numbered capture groups
+
+## Examples
+
+### Example 1: Non-capturing inline modifier
+
+**Problematic configuration:**
+
+```
+server {
+    location / {
+        # (?i) is a case-insensitive flag, NOT a capturing group
+        rewrite "(?i)/" $1 break;
+    }
+}
+```
+
+**Issue:** The pattern `(?i)/` uses `(?i)` to enable case-insensitive matching, but it doesn't create a capturing group. The `$1` reference will be empty.
+
+**Fix:**
+
+```
+server {
+    location / {
+        # Add parentheses to create a capturing group
+        rewrite "(?i)/(.*)" /$1 break;
+    }
+}
+```
+
+### Example 2: Missing capture groups
+
+**Problematic configuration:**
+
+```
+server {
+    location / {
+        rewrite "^/path" $1 redirect;
+    }
+}
+```
+
+**Issue:** The pattern `^/path` has no capturing groups, so `$1` will be empty.
+
+**Fix:**
+
+```
+server {
+    location / {
+        # Either remove the unnecessary $1 reference
+        rewrite "^/path" /newpath redirect;
+        # Or add a capturing group if needed
+        rewrite "^/path/(.*)$" /newpath/$1 redirect;
+    }
+}
+```
+
+### Example 3: Referencing wrong group number
+
+**Problematic configuration:**
+
+```
+server {
+    location / {
+        # Pattern has only 1 capturing group, but references $2
+        rewrite "^/(.*)$" /$1/$2 break;
+    }
+}
+```
+
+**Issue:** The pattern only has one capturing group `(.*)`, but the replacement references both `$1` and `$2`. The `$2` will be empty.
+
+**Fix:**
+
+```
+server {
+    location / {
+        # Add a second capturing group if needed
+        rewrite "^/([^/]+)/(.*)$" /$2/$1 break;
+        # Or remove the invalid reference
+        rewrite "^/(.*)$" /prefix/$1 break;
+    }
+}
+```
+
+### Example 4: Set in if block
+
+**Problematic configuration:**
+
+```
+server {
+    location / {
+        if ($uri ~ "^/path") {
+            set $x $1;  # $1 doesn't exist
+        }
+    }
+}
+```
+
+**Issue:** The regex pattern in the `if` condition has no capturing groups, so `$1` is undefined.
+
+**Fix:**
+
+```
+server {
+    location / {
+        if ($uri ~ "^/path/(.*)$") {
+            set $x $1;  # Now $1 contains the captured value
+        }
+    }
+}
+```
+
+## What can I do?
+
+1. **Add capturing groups to your regex pattern** if you need to reference parts of the matched string
+1. **Remove unnecessary capture group references** if you don't actually need them
+1. **Use the correct group numbers** - remember that group numbering starts at 1, and `$0` is not available in NGINX
+1. **Remember that non-capturing groups don't create references** - patterns like `(?:...)`, `(?i)`, `(?=...)` don't create numbered groups
+1. **Test your regex patterns** to ensure they capture what you expect
+
+# [low_keepalive_requests] Low `keepalive_requests` value
+
+The `keepalive_requests` directive sets the maximum number of requests that can be served through one keep-alive connection. After the maximum number of requests are made, the connection is closed.
+
+## Why this matters
+
+Prior to nginx 1.19.10, the default value was 100. This was raised to 1000 because low values can cause problems:
+
+- **HTTP/2 multiplexing**: Modern browsers open fewer connections but send many requests over each one. A low `keepalive_requests` value forces frequent connection resets.
+- **Client disconnections**: Some clients may experience failed requests when connections are closed prematurely.
+- **Performance overhead**: Establishing new connections has overhead (TCP handshake, TLS negotiation). Keeping connections alive longer improves performance.
+
+## Bad example
+
+```
+keepalive_requests 100;
+```
+
+This forces connection closure after only 100 requests, which can cause issues with HTTP/2 clients.
+
+## Good example
+
+```
+keepalive_requests 1000;
+```
+
+Or simply omit the directive to use nginx's default (1000 since nginx 1.19.10).
+
+## References
+
+- [nginx documentation: keepalive_requests](https://nginx.org/en/docs/http/ngx_http_core_module.html#keepalive_requests)
+- [nginx ticket #2155: Increase default keepalive_requests](https://trac.nginx.org/nginx/ticket/2155)
+- [Debugging failures of HTTP/2 in Burp, mitmproxy, and browsers](https://joshua.hu/http2-burp-proxy-mitmproxy-nginx-failing-load-resources-chromium#nginx-keepalive_requests)
+
+# [origins] Problems with referrer/origin validation
+
+It's not unusual to use regex for `Referer` or `Origin` headers validation. It is often necessary for setting the `X-Frame-Options` header (ClickJacking protection) or Cross-Origin Resource Sharing.
+
+The most common errors with this configuration are:
+
+- regex errors;
+- allow third-party origins.
+
+> Notice: by default, Gixy doesn't check regexes for third-party origins matching. You can pass a list of trusted domains by using the option `--origins-domains example.com,foo.bar`.
+
+### CLI and config options
+
+- `--origins-domains domains` (Default: `*`): Comma-separated list of trusted registrable domains. Use `*` to disable third‑party checks. Example: `--origins-domains example.com,foo.bar`.
+- `--origins-https-only true|false` (Default: `false`): When true, only the `https` scheme is considered valid for `Origin`/`Referer`.
+- `--origins-lower-hostname true|false` (Default: `true`): Normalize hostnames to lowercase before validation.
+
+Config file example:
+
+```
+[origins]
+domains = example.com, example.org
+https-only = true
+```
+
+## How can I find it?
+
+"Eazy"-breezy:
+
+- you have to find all the `if` directives that are in charge of `$http_origin` or `$http_referer` check;
+- make sure your regexes are a-ok.
+
+Misconfiguration example:
+
+```
+if ($http_origin ~* ((^https://www\.yandex\.ru)|(^https://ya\.ru)$)) {
+    add_header 'Access-Control-Allow-Origin' "$http_origin";
+    add_header 'Access-Control-Allow-Credentials' 'true';
+}
+```
+
+## What can I do?
+
+- fix your regex or toss it away :)
+- if you use regex validation for `Referer` request header, then, possibly (not 100%), you could use [ngx_http_referer_module](https://nginx.org/en/docs/http/ngx_http_referer_module.htmll);
+- often it's better to avoid regex entirely for `Origin` and use a `map` allowlist:
+
+```
+map $http_origin $allow_origin {
+    ~^https://([A-Za-z0-9\-]+\.)?example\.com(?::[0-9]{1,5})?$ $http_origin;
+    default "";
+}
+add_header Access-Control-Allow-Origin $allow_origin always;
+```
+
+Gixy also understands this pattern, and will also analyze regex map keys feeding `Access-Control-Allow-Origin` in the above example.
+
+# [proxy_pass_normalized] `proxy_pass` may decode and normalize paths
+
+When `proxy_pass` includes a path (anything after the host), NGINX will decode percent-encodings and normalize the URL path before proxying. This can lead to:
+
+- Decoding of encoded slashes like `%2F..%2F` into `/../`
+- Path normalization side effects
+- Double-encoding pitfalls when combined with certain `rewrite` usages
+
+These behaviors may cause upstreams to see different paths than intended, potentially enabling path traversal or bypassing security controls.
+
+## Insecure examples
+
+```
+location /api/ {
+    # Includes a path component after the host
+    proxy_pass http://backend/api/;  # Normalization/decoding may occur
+}
+```
+
+Combining with a rewrite that copies the full request URI without using captured groups also risks double-encoding:
+
+```
+location / {
+    rewrite ^ $request_uri;  # copies entire URI
+    proxy_pass http://backend/service;  # path present and no $1 or $uri
+}
+```
+
+## Safer alternatives
+
+- Prefer omitting the path in `proxy_pass`, and let the request path pass through unchanged:
+
+```
+location /api/ {
+    proxy_pass http://backend;  # No path → upstream receives original path
+}
+```
+
+- If you must include a path, use a captured group or `$uri` to avoid double-encoding and keep control over the path:
+
+```
+location ~ ^/api/(.*)$ {
+    proxy_pass http://backend/api/$1;  # Uses captured group
+}
+```
+
+- Avoid `rewrite ^ $request_uri;` paired with a `proxy_pass` path unless you also include `$1` or `$uri` appropriately.
+
+## Why it matters
+
+Normalizing and decoding can alter how the upstream interprets requests, especially for security-sensitive routing. By removing the path from `proxy_pass` or carefully controlling it with variables, you reduce unexpected behavior.
+
+# [regex_redos] Regular Expression Denial of Service (ReDoS)
+
+ReDoS (Regular Expression Denial of Service) occurs when a regex pattern with certain structures causes catastrophic backtracking on specially crafted input, consuming excessive CPU time.
+
+## Why this matters
+
+nginx uses PCRE regular expressions in several directives where user-controlled input is matched:
+
+- `location ~ pattern` - matches request URI
+- `if ($var ~ pattern)` - matches variables like `$http_referer`, `$request_uri`
+- `rewrite pattern replacement` - matches request URI
+- `server_name ~pattern` - matches Host header
+
+An attacker who can craft input matching a vulnerable regex can cause nginx workers to hang, leading to denial of service with minimal attack resources.
+
+## Insecure example
+
+```
+# Catastrophic backtracking for long "a" runs
+location ~ ^/(a|aa|aaa|aaaa)+$ {
+    return 200 "ok";
+}
+```
+
+A path like `/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaab` can tie up CPU for a long time.
+
+## Safer alternatives
+
+- Anchor and simplify patterns; avoid nested alternations and ambiguous repetitions
+- Prefer explicit, linear-time constructs where possible
+- Constrain input length before applying expensive regexes
+
+```
+# Safer: anchored and simplified
+location ~ ^/a+$ {
+    return 200 "ok";
+}
+```
+
+## References
+
+- [OWASP: Regular expression Denial of Service](https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS)
+- [Cloudflare: Details of the Cloudflare outage on July 2, 2019](https://blog.cloudflare.com/details-of-the-cloudflare-outage-on-july-2-2019/) - a famous ReDoS incident
+
+# [resolver_external] Using external DNS nameservers
+
+Using public DNS servers directly in the `resolver` directive can make nginx vulnerable to DNS cache poisoning and off-path response injection. Spoofed DNS replies may poison nginx's cache and cause it to proxy requests to attacker-controlled hosts.
+
+## Insecure example
+
+```
+# Public, external resolvers (unsafe)
+resolver 1.1.1.1 8.8.8.8;
+
+# Variable-based upstream resolution depends on resolver
+set $backend upstream.internal.example;
+location / {
+    proxy_pass http://$backend;
+}
+```
+
+## Safer alternatives
+
+- Run a local, caching resolver and point nginx to loopback only:
+
+```
+# Use only local resolvers
+resolver 127.0.0.1 [::1] valid=10s;
+resolver_timeout 5s;
+```
+
+- Prefer static upstreams (avoid variable-based `proxy_pass`) when feasible
+- Keep `valid` low to reduce cache lifetime; ensure your local resolver is trusted and hardened
+
+## Why it matters
+
+- External resolvers increase the attack surface for response spoofing
+- Poisoned cache entries can silently redirect traffic to arbitrary upstreams
+- A local resolver (e.g., `unbound`, `dnsmasq`) on loopback significantly mitigates this risk
+
+# [return_bypasses_allow_deny] Return bypasses `allow` and `deny` directives
+
+Warns when `return` is used in the same scope as `allow`/`deny`, because `return` takes precedence and can bypass access controls.
+
+- Severity: Medium
+- Directives: `allow`, `deny`
+
+### Why it matters
+
+In nginx, `return` short-circuits request processing and is evaluated before `allow`/`deny` in the same context, potentially exposing content unintentionally.
+
+### Insecure
+
+```
+location / {
+  allow 127.0.0.1;
+  deny all;
+  return 200 "hi";
+}
+```
+
+### Safer alternatives
+
+- Use a named location and `try_files` to direct traffic conditionally.
+- Move access control to a higher or matching context where it applies before `return`.
+
+# [ssrf] Server Side Request Forgery
+
+Server Side Request Forgery - attack that forces a server to perform arbitrary requests (from Nginx in our case). It's possible when an attacker controls the address of a proxied server (second argument of the `proxy_pass` directive).
+
+## How can I find it?
+
+There are two types of errors that make a server vulnerable:
+
+- lack of the [internal](https://nginx.org/en/docs/http/ngx_http_core_module.html#internal) directive. It is used to point out a location that can be used for internal requests only;
+- unsafe internal redirection.
+
+### Lack of the internal directive
+
+Classical misconfiguration, based on lack of the `internal` directive, that makes SSRF possible:
+
+```
+location ~ /proxy/(.*)/(.*)/(.*)$ {
+    proxy_pass $1://$2/$3;
+}
+```
+
+An attacker has complete control over the proxied address, that makes sending requests on behalf of Nginx possible.
+
+### Unsafe internal redirection
+
+Let's say you have internal location in your config and that location uses some request data as proxied server's address.
+
+E.g.:
+
+```
+location ~* ^/internal-proxy/(?<proxy_proto>https?)/(?<proxy_host>.*?)/(?<proxy_path>.*)$ {
+    internal;
+
+    proxy_pass $proxy_proto://$proxy_host/$proxy_path ;
+    proxy_set_header Host $proxy_host;
+}
+```
+
+According to Nginx docs, internal requests are the following:
+
+> - requests are redirected by the **error_page**, index, random_index, and **try_files** directives;
+> - requests redirected by the "X-Accel-Redirect" response header field from an upstream server;
+> - sub-requests formed by the "include virtual" command of the `ngx_http_ssi_module` module and by the ngx_http_addition_module module directives;
+> - requests changed by the **rewrite** directive
+
+Accordingly, any unsafe rewrite allows an attacker to make an internal request and control a proxied server's address.
+
+Misconfiguration example:
+
+```
+rewrite ^/(.*)/some$ /$1/ last;
+
+location ~* ^/internal-proxy/(?<proxy_proto>https?)/(?<proxy_host>.*?)/(?<proxy_path>.*)$ {
+    internal;
+
+    proxy_pass $proxy_proto://$proxy_host/$proxy_path ;
+    proxy_set_header Host $proxy_host;
+}
+```
+
+## What can I do?
+
+There are several rules you better follow when writing such configurations:
+
+- use only "internal locations" for proxying;
+- if possible, forbid user data transmission;
+- protect proxied server's address:
+- if the quantity of proxied hosts is limited (when you have S3 or smth), you better hardcode them and choose them with `map` or do it some other way;
+- if you can't list all possible hosts to proxy, you should sign the address.
+
+# [try_files_is_evil_too] `try_files` without `open_file_cache`
+
+The `try_files` directive is commonly used in nginx to check for file existence before falling back to other options. However, without `open_file_cache`, each request triggers multiple `stat()` system calls, which can significantly impact performance.
+
+## Why this matters
+
+For every request, `try_files` performs file existence checks using `stat()` system calls. Without caching:
+
+- **High I/O overhead**: Each request causes multiple disk operations
+- **Performance degradation**: Under load, this becomes a bottleneck
+- **Increased latency**: Especially on network filesystems (NFS, distributed storage)
+
+## Bad example
+
+```
+location / {
+    try_files $uri $uri/ /index.php$is_args$args;
+}
+```
+
+Every request will perform 2-3 `stat()` calls without any caching.
+
+## Good example
+
+```
+# Enable file cache at http or server level
+open_file_cache max=1000 inactive=20s;
+open_file_cache_valid 30s;
+open_file_cache_min_uses 2;
+open_file_cache_errors on;
+
+location / {
+    try_files $uri $uri/ /index.php$is_args$args;
+}
+```
+
+With `open_file_cache`, nginx caches file metadata, dramatically reducing `stat()` calls.
+
+## Cache configuration options
+
+| Directive                          | Description                                    |
+| ---------------------------------- | ---------------------------------------------- |
+| `open_file_cache max=N inactive=T` | Cache up to N entries, expire after T inactive |
+| `open_file_cache_valid T`          | How often to validate cached entries           |
+| `open_file_cache_min_uses N`       | Min accesses before caching                    |
+| `open_file_cache_errors on`        | Cache "file not found" errors too              |
+
+## When to disable this check
+
+If you're serving dynamic content where files change frequently, or using a RAM disk, the performance impact may be negligible. You can disable this specific check in your gixy configuration.
+
+## References
+
+- [nginx documentation: open_file_cache](https://nginx.org/en/docs/http/ngx_http_core_module.html#open_file_cache)
+
+# [unanchored_regex] Regular expression without anchors
+
+In NGINX, when defining location with regular expression, it's recommended to anchor the regex at least to the beginning or end of the string. Otherwise, the regex will match any part of the string, which may lead to unexpected behavior or decreased performance.
+
+For example, the following location block will match any URL that contains `/v1/`:
+
+```
+location ~ /v1/ {
+    # ...
+}
+```
+
+This will match:
+
+- `/v1/`
+- `/v1/foo`
+- `/foo/v1/bar`
+- `/foo/v1/`
+
+To match only URLs that start with `/v1/`, the regex should be anchored:
+
+```
+location ~ ^/v1/ {
+    # ...
+}
+```
+
+This way, the regex will match only URLs that start with `/v1/`.
+
+For matching file extensions, e.g., PHP files, the regex should be anchored at the end of the string.
+
+Incorrect:
+
+```
+location ~ \.php {
+    # ...
+}
+```
+
+It will match any URL that contains `.php`: `/foo.php`, `/foo.phpanything`, which is incorrect.
+
+Correct:
+
+```
+location ~ \.php$ {
+    # ...
+}
+```
+
+This way, the regex will match only URLs that end with `.php`.
+
+# [valid_referers] none in valid_referers
+
+Module [ngx_http_referer_module](https://nginx.org/en/docs/http/ngx_http_referer_module.html) allows to block the access to service for requests with wrong `Referer` value. It's often used for setting `X-Frame-Options` header (ClickJacking protection), but there may be other cases.
+
+Typical problems with this module's config:
+
+- use of `server_names` with bad server name (`server_name` directive);
+- too broad and/or bad regexes;
+- use of `none`.
+
+> Notice: at the moment, Gixy can only detect the use of `none` as a valid referer.
+
+## Why `none` is bad?
+
+According to [docs](https://nginx.org/ru/docs/http/ngx_http_referer_module.html#valid_referers):
+
+> `none` - the "Referer" field is missing in the request header;
+
+Still, it's important to remember that any resource can make user's browser to make a request without a `Referer` request header. For example:
+
+- in case of redirect from HTTPS to HTTP;
+- by setting up the [Referrer Policy](https://www.w3.org/TR/referrer-policy/);
+- a request with opaque origin, `data:` scheme, for example.
+
+So, by using `none` as a valid referer, you nullify any attempts in referer validation.
+
+# [version_disclosure] Version Disclosure
+
+The `version_disclosure` plugin checks Nginx configurations for settings that expose the Nginx version. This information can be used by attackers to identify specific, known vulnerabilities.
+
+## Detection Logic
+
+The plugin detects two types of issues:
+
+### 1. Explicit Dangerous Values
+
+Reports configurations where `server_tokens` is explicitly set to expose information:
+
+- `server_tokens on;` - Exposes full version and OS.
+- `server_tokens build;` - Exposes version and build info.
+
+### 2. Missing `server_tokens` (Full Config Mode)
+
+If the configuration contains an `http` block ("Full Config Mode"), the plugin also reports missing `server_tokens` directives. The Nginx default is `server_tokens on;` when the directive is absent.
+
+## Full Config Mode
+
+This mode is active when an `http` block is present. The plugin checks the configuration hierarchy:
+
+1. **HTTP Level**: Checks for `server_tokens off;` (global protection).
+1. **Server Level**: Checks each server block for missing or unsafe settings, respecting inheritance.
+
+If `server_tokens off;` is not present at the `http` level, any missing directive in a `server` block is flagged as dangerous because it inherits the default `on` value.
+
+## Why it Matters
+
+Nginx leaks its version in HTTP headers and error pages by default. This enables attackers to quickly:
+
+1. Identify the exact Nginx version.
+1. Find known exploits for that version.
+1. Execute targeted attacks.
+
+## Best Practices
+
+1. **Set `server_tokens off;`** in the `http` block for global security.
+1. **Never use `server_tokens on;` or `server_tokens build;`**.
+1. **Verify** the `Server` header is suppressed in live responses.
+
+# [worker_rlimit_nofile_vs_connections] worker_rlimit_nofile must be at least twice `worker_connections`
+
+A frequent configuration error is not raising the file descriptor (FD) limit to at least double the `worker_connections` value. To resolve this, configure the `worker_rlimit_nofile` directive in the main configuration context, and ensure it is at least twice the value of `worker_connections`.
+
+Why are additional FDs necessary?
+
+- **Web Server Mode**:
+  - FD is used for the client connection.
+  - An additional FD is required for each file served, meaning at least two FDs per client—even more if the web page consists of multiple files.
+- **Proxy Server Mode**:
+  - One FD for the connection to the client.
+  - One FD for the connection to the upstream server.
+  - Potentially a third FD for temporarily storing the upstream server's response.
+- **Caching Server Mode**:
+  - NGINX behaves like a web server when serving cached responses (using FDs similarly as above).
+  - It acts like a proxy server when the cache is empty or the cached content has expired.
+
+By ensuring the FD limit is at least twice the number of `worker_connections`, you accommodate the minimum FD requirements across these different modes of operation.
