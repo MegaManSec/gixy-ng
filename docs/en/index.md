@@ -7,9 +7,12 @@ description: "Open source NGINX security, hardening, and configuration complianc
 
 ## Overview
 
-<img width="192" height="192" alt="GixyNG Mascot Logo" style="float: right;" align="right" src="https://gixy.io/imgs/gixy.jpg">
+<a href="https://gixy.io/"><img width="192" height="192" alt="GixyNG Mascot Logo" style="float: right;" align="right" src="https://gixy.io/imgs/gixy.jpg" /></a>
 
-GixyNG is an open source NGINX security scanner and configuration checker that analyzes your NGINX configuration for security issues, misconfigurations, and missed hardening opportunities, before they reach production. You can use GixyNG to run automated NGINX configuration security audits, and harden your nginx.conf against SSRF, HTTP response splitting, host header spoofing, version disclosure, and other vulnerabilities, as well as misconfigurations which lead to degraded performance and slow nginx servers.
+
+GixyNG is an open source NGINX configuration security scanner and hardening checker. It performs static analysis of your nginx.conf to detect security vulnerabilities, misconfigurations, and performance issues before they reach production.
+
+GixyNG is an open source NGINX security scanner and configuration checker that analyzes your NGINX configuration for security issues, misconfigurations, and missed hardening opportunities, before they reach production. You can use GixyNG to run automated NGINX configuration security audits, and harden your nginx.conf against security vulnerabilities, as well as misconfigurations which lead to degraded performance and slow nginx servers.
 
 ### What is Gixy?
 
@@ -195,6 +198,8 @@ Currently supported Python versions are 3.6 through 3.13.
 Disclaimer: GixyNG is well tested only on GNU/Linux, other OSs may have some issues.
 
 ## Contributing
+
+The official homepage of GixyNG is [https://gixy.io/](https://gixy.io/). The source code can be found at [https://github.com/MegaManSec/GixyNG](https://github.com/MegaManSec/GixyNG).
 
 Contributions to GixyNG are always welcome! You can help us in different ways:
 
