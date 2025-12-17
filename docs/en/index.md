@@ -47,7 +47,7 @@ GixyNG can can find various nginx configuration security issues, as well as ngin
 *   [[version_disclosure] Using insecure values for server_tokens](plugins/version_disclosure.md)
 *   [[worker_rlimit_nofile_vs_connections] `worker_rlimit_nofile` must be at least twice `worker_connections`](plugins/worker_rlimit_nofile_vs_connections.md)
 
-Something not detected? Please open an [issues labeled with "new plugin"](https://github.com/megamansec/GixyNG/issues?q=is%3Aissue+is%3Aopen+label%3A%22new+plugin%22).
+Something not detected? Please open an [issue](https://github.com/megamansec/GixyNG/issues) on GitHub with what's missing!
 
 ## Installation
 
@@ -195,19 +195,20 @@ With GixyNG, you can perform an automated NGINX configuration security reviewtha
 
 Currently supported Python versions are 3.6 through 3.13.
 
-Disclaimer: GixyNG is well tested only on GNU/Linux, other OSs may have some issues.
+Disclaimer: While GixyNG is well tested only on GNU/Linux, other OSs may have some issues.
 
 ## Contributing
 
-The official homepage of GixyNG is [https://gixy.io/](https://gixy.io/). The source code can be found at [https://github.com/MegaManSec/GixyNG](https://github.com/MegaManSec/GixyNG).
+Contributions to GixyNG are always welcome! You can help us in different ways, such as:
 
-Contributions to GixyNG are always welcome! You can help us in different ways:
+- Reporting bugs.
+- Suggesting new plugins for detection.
+- Improving documentation.
+- Fixing, refactoring, improving, and creating new, code.
 
-- Open an issue with suggestions for improvements and errors you're facing in the [GitHub repository](https://github.com/MegaManSec/GixyNG);
-- Fork this repository and submit a pull request;
-- Improve the documentation.
+Before submitting any changes in pull requests, please read the contribution guideline document, [Contributing to GixyNG](https://gixy.io/contributing).
 
-Code guidelines:
+The official homepage of GixyNG is [https://gixy.io/](https://gixy.io/). Any changes to documentation in GixyNG will automatically be reflected on that website.
 
-- Python code style should follow [pep8](https://www.python.org/dev/peps/pep-0008/) standards whenever possible;
-- Pull requests with new plugins must have unit tests for them.
+The source code can be found at [https://github.com/MegaManSec/GixyNG](https://github.com/MegaManSec/GixyNG).
+
