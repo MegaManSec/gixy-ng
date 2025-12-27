@@ -1,5 +1,4 @@
 ---
-#title: "" # Deliberately left blank
 description: "Open source NGINX security, hardening, and configuration compliance scanner for automating nginx.conf security audits, compliance checks, and hardening against misconfigurations."
 ---
 
@@ -9,51 +8,37 @@ description: "Open source NGINX security, hardening, and configuration complianc
 
 <a href="https://gixy.io/"><img width="192" height="192" alt="GixyNG Mascot Logo" style="float: right;" align="right" src="https://gixy.io/imgs/gixy.jpg" /></a>
 
-GixyNG is an open source NGINX security scanner and configuration hardening tool. It performs static analysis of your nginx.conf to identify security vulnerabilities, misconfigurations, and performance issues before they reach production. With GixyNG, you can run automated NGINX configuration security audits, uncover missed hardening opportunities, and prevent configuration mistakes that lead to slow or unstable NGINX servers.
-
-Currently supported Python versions are 3.6+.
-
-Disclaimer: While GixyNG is well tested only on GNU/Linux, other OSs may have some issues. PRs and bug reports welcome.
+GixyNG is an open source NGINX configuration security scanner and hardening tool that performs static analysis of your nginx.conf to detect security misconfigurations, hardening gaps, and common performance pitfalls before they reach production. Run it locally or in CI/CD to automate NGINX security audits and configuration compliance checks, producing actionable findings that help prevent unstable/slow NGINX servers, and reduce risk from unsafe directives and insecure defaults.
 
 ### Quick start
 
-GixyNG is distributed on [PyPI](https://pypi.python.org/pypi/GixyNG). You can install it with pip or uv:
+GixyNG (the `gixy` CLI) is distributed on [PyPI](https://pypi.python.org/pypi/GixyNG). You can install it with pip or uv:
 
 ```bash
 # pip
 pip install GixyNG
 
-# uv (recommended for CLIs: installs `gixy` on your PATH)
+# uv
 uv tool install GixyNG
-
-# uv (pip-compatible: installs into the active virtual environment)
-uv pip install GixyNG
 ```
 
-Alternatively, you can run it without installation:
+You can also export your NGINX configuration to a single dump file:
 
 ```bash
-# uvx runs the tool in an isolated temporary environment
-uvx --from GixyNG gixy /etc/nginx/nginx.conf
-```
-
-You can also export your NGINX configuration to a single dump-file:
-
-```bash
-# Dumps the full nginx configuration into a single file
+# Dumps the full NGINX configuration into a single file (including all includes)
 nginx -T | tee ./nginx-dump.conf
 ```
 
-And then scan the dump-file elsewhere:
+And then scan the dump file elsewhere:
 
 ```bash
-# Equivalent to scanning a full nginx configuration on a filesystem
+# Equivalent to scanning the full rendered configuration output.
 gixy ./nginx-dump.conf
 ```
 
 ## What it can do
 
-GixyNG can find various nginx configuration security issues, as well as nginx configuration performance issues, based on your `nginx.conf` and other nginx configuration files. The following plugins are supported to detect these misconfigurations:
+GixyNG can detect a wide range of NGINX security and performance misconfigurations across `nginx.conf` and included configuration files. The following plugins are supported:
 
 *   [[add_header_content_type] Setting Content-Type via add_header](https://gixy.io/plugins/add_header_content_type)
 *   [[add_header_multiline] Multiline response headers](https://gixy.io/plugins/add_header_multiline)
@@ -82,14 +67,40 @@ GixyNG can find various nginx configuration security issues, as well as nginx co
 
 Something not detected? Please open an [issue](https://github.com/MegaManSec/GixyNG/issues) on GitHub with what's missing!
 
-## Usage
+## Usage (flags)
 
-By default, GixyNG (the `gixy` CLI) will try to analyze your NGINX configuration placed in `/etc/nginx/nginx.conf`.
+`gixy` defaults to reading a system's NGINX configuration from `/etc/nginx/nginx.conf`. You can also specify the location by passing it to `gixy`:
 
-But you can always specify the needed path:
-
+```bash
+# analyze the configuration in /opt/nginx.conf
+gixy /opt/nginx.conf
 ```
-$ gixy /etc/nginx/nginx.conf
+
+You can run a focused subset of checks with `--tests`:
+
+```bash
+# Only run these checks
+gixy --tests http_splitting,ssrf,version_disclosure
+```
+
+Or skip a few noisy checks with `--skips`:
+
+```bash
+# Run everything except these checks
+gixy --skips low_keepalive_requests,worker_rlimit_nofile_vs_connections
+```
+
+To only report issues of a certain severity or higher, use the compounding `-l` flag:
+
+```bash
+# -l for LOW severity issues and high, -ll for MEDIUM and higher, and -lll for only HIGH severity issues
+gixy -ll
+```
+
+By default, the output of `gixy` is ANSI-colored; best viewed in an ANSI-compatible terminal. You can use the `--format` (`-f`) flag with the `text` value to get an uncolored output:
+
+```shell
+$ gixy -f text
 
 ==================== Results ===================
 
@@ -116,76 +127,18 @@ Total issues:
     High: 1
 ```
 
-Or skip some tests:
+You can also use `-f json` to get a reproducible, machine-readable JSON output:
 
-```
-$ gixy --skips http_splitting /etc/nginx/nginx.conf
-
-==================== Results ===================
-No issues found.
-
-==================== Summary ===================
-Total issues:
-    Unspecified: 0
-    Low: 0
-    Medium: 0
-    High: 0
+```shell
+$ gixy -f json
+[{"config":"\nserver {\n\n\tlocation ~ /v1/((?<action>[^.]*)\\.json)?$ {\n\t\tadd_header X-Action $action;\n\t}\n}","description":"Using variables that can contain \"\\n\" or \"\\r\" may lead to http injection.","file":"/etc/nginx/nginx.conf","line":4,"path":"/etc/nginx/nginx.conf","plugin":"http_splitting","reason":"At least variable \"$action\" can contain \"\\n\"","reference":"https://gixy.io/plugins/http_splitting/","severity":"HIGH","summary":"Possible HTTP-Splitting vulnerability."}]
 ```
 
-Or something else, you can find all other `gixy` arguments with the help command: `gixy --help`
+More flags for usage can be found by passing `--help` to `gixy`. You can also find more information in the [Usage Guide](https://gixy.io/usage).
 
-### Plugin options
+## Configuration and plugin options
 
-Some plugins expose options which you can set via CLI flags or config file. CLI flags follow the pattern `--<PluginName>-<option>` with dashes, while config file uses `[PluginName]` sections with dashed keys.
-
-- `origins`:
-  - `--origins-domains domains`: Comma-separated list of trusted registrable domains. Use `*` to disable third‑party checks. Example: `--origins-domains example.com,foo.bar`. Default: `*`.
-  - `--origins-https-only true|false`: When true, only the `https` scheme is considered valid for `Origin`/`Referer`. Default: `false`.
-  - `--origins-lower-hostname true|false`: Normalize hostnames to lowercase before validation. Default: `true`.
-
-- `add_header_redefinition`:
-  - `--add-header-redefinition-headers headers`: Comma-separated allowlist of header names (case-insensitive). When set, only dropped headers from this list will be reported; when unset, all dropped headers are reported. Example: `--add-header-redefinition-headers x-frame-options,content-security-policy`. Default: unset (report all).
-
-Examples (config file):
-
-```
-[origins]
-domains = example.com, example.org
-https-only = true
-
-[add_header_redefinition]
-headers = x-frame-options, content-security-policy
-```
-
-You can also make `gixy` use pipes (stdin), like so:
-
-```bash
-echo "resolver 1.1.1.1;" | gixy -
-```
-
-Here is a drop-in replacement that removes the Kubernetes section and explains the out-of-band `nginx -T` approach.
-
-### Out-of-band config dump scanning
-
-If you do not want to install and run GixyNG directly on the host running NGINX, you can dump the fully expanded NGINX configuration with `nginx -T` and scan that dump elsewhere.
-
-`nginx -T` prints the complete configuration as NGINX sees it, including all `include` files, expanded in one stream. This makes it ideal for "out-of-band" scanning: export the config from production, then run GixyNG on it elsewhere.
-
-On the system running NGINX, run:
-
-```bash
-nginx -T | tee ./nginx-dump.conf
-```
-
-Copy `nginx-dump.conf` to your scanning environment, then run:
-
-```bash
-gixy ./nginx-dump.conf
-```
-
-## What is Gixy?
-
-_Gixy_ is an older NGINX configuration analyzer originally developed by Yandex. GixyNG is a maintained fork of Gixy that adds new checks, performance improvements, hardening suggestions, and support for modern Python and NGINX versions. If you are looking for an NGINX config scanner that is actively maintained, use GixyNG.
+Some plugins expose options which you can set via CLI flags or a configuration file. You can read more about those in the [Configuration guide](https://gixy.io/configuration/).
 
 ## GixyNG for NGINX security and compliance
 
@@ -208,3 +161,6 @@ The official homepage of GixyNG is [https://gixy.io/](https://gixy.io/). Any cha
 
 The source code can be found at [https://github.com/MegaManSec/GixyNG](https://github.com/MegaManSec/GixyNG).
 
+## What is Gixy? (Background)
+
+_Gixy_ is an older NGINX configuration analyzer originally developed by Yandex. GixyNG is a maintained fork of Gixy that adds new checks, performance improvements, hardening suggestions, and support for modern Python and NGINX versions. If you are looking for an NGINX config scanner that is actively maintained, use GixyNG.

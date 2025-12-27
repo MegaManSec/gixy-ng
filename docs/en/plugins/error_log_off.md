@@ -11,7 +11,7 @@ If you add `error_log` off to your configuration, NGINX will create a log file n
 
 Disabling the error log is generally not advised, as it provides crucial information
 for troubleshooting NGINX issues. However, if disk space is extremely limited and
-there’s a risk that logging could fill up the available space, you might opt to
+there's a risk that logging could fill up the available space, you might opt to
 disable error logging. To do so, add the following directive in the main configuration
 context:
 

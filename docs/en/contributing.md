@@ -11,7 +11,7 @@ The source code can be found at [https://github.com/MegaManSec/GixyNG](https://g
 When contributing to this repository:
 
 - Be intentional. Every file and every line in a PR should exist for a clear reason.
-- Take responsibility for your changes. If it’s in your PR, you own it.
+- Take responsibility for your changes. If it's in your PR, you own it.
 
 Low-quality contributions in the past have included broken code, random files, filler documentation, and changes the contributor did not fully understand. These guidelines exist to avoid repeating those mistakes. Tread carefully.
 

@@ -38,7 +38,8 @@ plugins:
           - en/plugins/*.md: Scanning plugin
 nav:
   - "NGINX Security Scanner": index.md
-  - "Configuration & Usage Guide": configuration.md
+  - "Usage Guide": usage.md
+  - "Configuration Guide": configuration.md
   - "Custom Variables & Drop-ins": variables-dropins.md
   - Plugins:
     - plugins/add_header_content_type.md
@@ -65,7 +66,6 @@ nav:
     - plugins/valid_referers.md
     - plugins/version_disclosure.md
     - plugins/worker_rlimit_nofile_vs_connections.md
-  - "GixyNG vs nginx -t": nginx-configuration-checker.md
   - "Contributing to GixyNG": contributing.md
 
 markdown_extensions:

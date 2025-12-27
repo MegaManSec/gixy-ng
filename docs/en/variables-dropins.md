@@ -1,33 +1,62 @@
 ---
 title: "Custom Variables & Drop-ins"
-description: "How to configure custom variable drop-ins for GixyNG to support third-party NGINX modules and resolve variable-related warnings."
+description: "Define custom NGINX variables for GixyNG using drop-in files, so scans handle third-party modules and stop warning about unknown variables."
 ---
 
-# Variables & Drop-ins
+# Custom Variables & Drop-ins
 
-## Custom variables drop-ins
+`gixy` tries to resolve variables as it analyzes your NGINX config. When it sees a variable it does not recognize, it will warn -- not because your config is wrong, but because the scanner cannot safely tell what might flow into that value.
 
-Some third-party NGINX modules define additional variables (e.g. `$brotli_ratio`). By default, Gixy warns when it cannot resolve a variable. You can teach Gixy about extra variables via simple drop-in files.
+This comes up a lot with third-party modules and bespoke setups (for example variables like `$brotli_ratio`), or when your organization injects variables through templates.
 
-## Enabling drop-ins
+Variable drop-ins are the solution to this: you provide a small directory of definitions, and `gixy` learns what those variables are supposed to look like.
 
-Provide one or more directories containing variable definitions using either CLI or config:
+Note: If you never see warnings about unknown variables, you probably don't need to use these.
 
-- CLI: `--vars-dirs /etc/gixy/vars,~/.config/gixy/vars`
-- gixy.cfg: `vars-dirs = [/etc/gixy/vars, ~/.config/gixy/vars]`
+## Enable drop-ins
 
-All files with `.cfg` or `.conf` extensions inside those directories are read.
+Point `gixy` at one or more directories containing variable definition files.
+
+CLI:
+
+```bash
+gixy --vars-dirs /etc/gixy/vars,~/.config/gixy/vars
+```
+
+Config file:
+
+```ini
+vars-dirs = [/etc/gixy/vars, ~/.config/gixy/vars]
+```
+
+`gixy` will read all files ending in `.cfg` or `.conf` inside those directories.
 
 ## File format
 
-Each non-empty, non-comment line defines one variable as `name value`. Supported value forms:
+Each non-empty, non-comment line defines one variable:
 
-- Quoted literal: `'...'` or `"..."` → treated as a literal value (non user-controlled)
-- Regex: `r'...'` or `r"..."` → a regular expression describing allowed content
-- `none`/`null` (case-insensitive) → mark as non user-controlled
-- Trailing comma after the value is tolerated
+```
+name value
+```
 
-Examples:
+A few value styles are supported:
+
+* **Quoted literal**: `'...'` or `"..."`
+  Treated as a literal, fixed value.
+
+* **Regex pattern**: `r'...'` or `r"..."`
+  A regular expression describing what the value is allowed to contain.
+
+* **none / null** (case-insensitive)
+  Marks the variable as "non user-controlled" for the purpose of analysis.
+
+Also:
+
+* Blank lines are ignored
+* Lines starting with `#` are ignored
+* A trailing comma after the value is accepted (handy if you are copy/pasting)
+
+### Examples
 
 ```cfg
 # /etc/gixy/vars/nginx-module-brotli.cfg
@@ -38,12 +67,11 @@ foo_host "example.com"
 foo_uri  r'/[^\s]*',
 ```
 
-Prefix variables are supported using names ending with `_` (like built-ins), e.g. `http_` will match `$http_foo`.
+## Prefix variables
 
-## Notes
+You can define variable *prefixes* by ending the name with an underscore `_`, similar to NGINX built-ins. For example, defining `http_` will match variables like `$http_user_agent`, `$http_x_forwarded_for`, and so on.
 
-- Drop-in variables override built-ins when names collide.
-- Only variables referenced during analysis are instantiated.
-- This mechanism affects variable resolution only; it does not change NGINX behavior.
-
-
+```cfg
+# Treat any $http_* variable as present
+http_ r'.+'
+```

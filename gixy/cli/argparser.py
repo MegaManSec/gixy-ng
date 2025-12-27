@@ -169,7 +169,7 @@ class ArgsParser(ArgumentParser):
 def create_parser():
     """Create an argument parser for Gixy."""
     return ArgsParser(
-        description="Gixy - a Nginx configuration [sec]analyzer\n\n",
+        description="GixyNG - The NGINX configuration analyzer\n\n",
         formatter_class=GixyHelpFormatter,
         config_file_parser_class=GixyConfigParser,
         auto_env_var_prefix="GIXY_",
