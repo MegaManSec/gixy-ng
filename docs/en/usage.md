@@ -15,14 +15,14 @@ If you have a standard NGINX install, this is usually enough:
 gixy
 ```
 
-If you want to point it at a specific config file:
+`gixy` can also read from a specific file, or even from stdin:
 
 ```bash
-# Scan a specific nginx.conf
-gixy /etc/nginx/nginx.conf
-
-# Or something custom
+# Scan a specific file
 gixy /opt/nginx/nginx.conf
+
+# pipe into gixy and read from stdin
+cat /opt/nginx/nginx.conf | gixy -
 ```
 
 ## Scan a rendered config dump
@@ -83,7 +83,6 @@ gixy --skips low_keepalive_requests,worker_rlimit_nofile_vs_connections
 
 `gixy` can print to the console for humans or emit clean output for tooling:
 
-
 ```bash
 # Console (default): colored outputs, readable sections.
 gixy -f console
@@ -133,7 +132,7 @@ If you ever see warnings about unknown variables, you may wish to specify them m
 gixy --vars-dirs ./vars,/etc/gixy/vars
 ```
 
-More information about the expected files in these directories can be found in [Custom Variables & Drop-Ins](https://gixy.io/variables-dropins).
+More information about the expected files in these directories can be found in [Custom Variables & Drop-Ins](https://gixy.io/variables-dropins/).
 
 ## Using a config file
 
@@ -149,4 +148,4 @@ You can also generate a config file from your current CLI arguments:
 gixy --write-config ./gixy.conf
 ```
 
-Full details (including plugin-specific settings) found in the [Configuration Guide](https://gixy.io/configuration).
+Full details (including plugin-specific settings) are found in the [Configuration Guide](https://gixy.io/configuration/).

@@ -5,13 +5,13 @@ description: "Configure GixyNG using a config file: set defaults for output, inc
 
 # Configuration
 
-You can run `gixy` entirely from CLI flags, but a configuration file may also be used to read a small set of global settings: output formatting, where to write reports, which checks to run, whether to process `include` directives, and where to look for custom variable drop-ins.
+You can run `gixy` entirely from CLI flags, but a configuration file may also be used to read settings, including output formatting, where to write reports, which checks to run, whether to process `include` directives, some plugin-specific settings, output severity filtering, and where to look for custom variable drop-ins.
 
-If you are looking for day-to-day CLI usage examples, see the [Usage Guide](https://gixy.io/usage).
+If you are looking for day-to-day CLI usage examples, see the [Usage Guide](https://gixy.io/usage/).
 
 ## Where config files live
 
-By default, `gixy` looks in these locations (first match wins):
+By default, `gixy` looks in these locations (loaded in this order):
 
 - `/etc/gixy/gixy.cfg`
 - `~/.config/gixy/gixy.conf`
@@ -34,17 +34,41 @@ The format is intentionally boring:
 
 * `key = value`
 * `#` starts a comment
-* optional `[sections]` (mainly used for advanced settings)
-* lists can be written as `[a, b, c]`
+* optional `[sections]` (mainly used for plugin settings)
+
+Values may be quoted or not, and lists should be comma-separated.
 
 Most keys match the long CLI flags with the leading `--` removed. For example:
 
 * CLI: `--disable-includes`
 * Config: `disable-includes = true`
 
+`[sections]` blocks are equivalent to their appended, CLI flag usage. For example, the config equivalent of `--add-header-redefinition-headers X-Frame-Options` is:
+
+```ini
+[add_header_redefinition]
+headers = X-Frame-Options
+```
+
+For non-plugin options, use the `[gixy]` block:
+
+```ini
+[gixy]
+level = 2
+```
+
 ## Settings you can configure
 
 These are the knobs you can set in the config file.
+
+### level
+
+You may set the level of filtering applied to the output of `gixy`:
+
+```ini
+; Report issues of a given severity level or higher (-l for LOW, -ll for MEDIUM, -lll for HIGH)
+level = 2
+```
 
 ### format
 
@@ -56,8 +80,6 @@ format = console   # default, colored output
 # format = json    # machine-readable JSON
 ```
 
-This matches `--format / -f`.
-
 ### output
 
 Write results to a file instead of stdout:
@@ -66,67 +88,59 @@ Write results to a file instead of stdout:
 output = ./gixy-report.json
 ```
 
-This matches `--output / -o`.
+### debug
 
-If you set `output`, the file format still depends on `format` (text vs JSON), so it is common to set them together:
+Run `gixy` in debug mode or not:
 
 ```ini
-format = json
-output = ./gixy-report.json
+; Turn on debug mode
+debug = false
 ```
 
 ### tests
 
-Run only a specific set of checks (allowlist):
+You may wish to only run a specific set of tests:
 
 ```ini
-tests = http_splitting,ssrf,version_disclosure
+; Comma-separated list of tests to exclusively run
+tests = add_header_redefinition,hash_without_default,http_splitting
 ```
 
-This matches `--tests`.
+## skips
 
-### skips
-
-Skip specific checks (blocklist):
+You may wish to skip specific tests:
 
 ```ini
-skips = low_keepalive_requests,worker_rlimit_nofile_vs_connections
+; Comma-separated list of tests to exclusively skip
+skips = proxy_pass_normalized,if_is_evil
 ```
-
-This matches `--skips`.
-
-If you set both `tests` and `skips`, think of it as: "run tests, then remove skips."
 
 ### disable-includes
 
-By default, `gixy` follows `include` directives so it can analyze the full config tree. You can disable that behavior:
+If enabled, `include` directives do not have their included-files read:
 
 ```ini
-disable-includes = true
+; Disable "include" directive processing
+disable-includes = false
 ```
-
-This matches `--disable-includes`.
-
-This setting is mainly useful when you are scanning a config on a machine that does not have the full include layout available. If you scan a rendered `nginx -T` dump, you usually do not need to touch it.
 
 ### vars-dirs
 
 Provide directories containing custom variable drop-ins:
 
 ```ini
-vars-dirs = [./vars, /etc/gixy/vars]
+; Comma-separated list of directories with custom variable drop-ins
+vars-dirs = ./vars,/etc/gixy/vars
 ```
 
-This matches `--vars-dirs`.
-
-If you do not know what this is, you probably do not need it. When you do, the dedicated guide is in [Custom Variables & Drop-Ins](https://gixy.io/variables-dropins).
+If you do not know what vars-dirs is, you probably do not need it. When you do, the dedicated guide is in [Custom Variables & Drop-Ins](https://gixy.io/variables-dropins/).
 
 ## Minimal example
 
-A tiny config that still pulls its weight:
+A tiny config that skips the `low_keepalive_requests` test, and saves a JSON-formatted report to `gixy-report.json`.
 
 ```ini
-# gixy.conf
+[gixy]
 format = json
 output = ./gixy-report.json
 skips = low_keepalive_requests
@@ -144,10 +158,6 @@ Most `gixy` settings are global and work well as shared defaults in a config fil
 
 If you need to tune a specific plugin, start with its documentation:
 
-- [add_header_redefinition](https://gixy.io/plugins/add_header_redefinition)
-- [origins](https://gixy.io/plugins/origins)
-- [regex_redos](https://gixy.io/plugins/regex_redos)
-
-## Severity filtering
-
-Severity filtering is CLI-only via `-l` repeats (`-l`, `-ll`, `-lll`). It is not read from the config file.
+- [add_header_redefinition](https://gixy.io/plugins/add_header_redefinition/)
+- [origins](https://gixy.io/plugins/origins/)
+- [regex_redos](https://gixy.io/plugins/regex_redos/)

@@ -85,7 +85,7 @@ def _get_cli_parser():
         type=str,
         default=["/etc/nginx/nginx.conf"],
         metavar="nginx.conf",
-        help="Path to nginx.conf, e.g. /etc/nginx/nginx.conf",
+        help="Path to nginx.conf, e.g. /etc/nginx/nginx.conf or - for stdin",
     )
 
     parser.add_argument(

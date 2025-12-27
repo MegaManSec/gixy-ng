@@ -26,44 +26,47 @@ You can also export your NGINX configuration to a single dump file:
 
 ```bash
 # Dumps the full NGINX configuration into a single file (including all includes)
-nginx -T | tee ./nginx-dump.conf
+nginx -T > ./nginx-dump.conf
 ```
 
-And then scan the dump file elsewhere:
+And then scan the dump file elsewhere (or via stdin):
 
 ```bash
 # Equivalent to scanning the full rendered configuration output.
 gixy ./nginx-dump.conf
+
+# Equivalent to above
+cat ./nginx-dump.conf | gixy -
 ```
 
 ## What it can do
 
 GixyNG can detect a wide range of NGINX security and performance misconfigurations across `nginx.conf` and included configuration files. The following plugins are supported:
 
-*   [[add_header_content_type] Setting Content-Type via add_header](https://gixy.io/plugins/add_header_content_type)
-*   [[add_header_multiline] Multiline response headers](https://gixy.io/plugins/add_header_multiline)
-*   [[add_header_redefinition] Redefining of response headers by "add_header" directive](https://gixy.io/plugins/add_header_redefinition)
-*   [[alias_traversal] Path traversal via misconfigured alias](https://gixy.io/plugins/alias_traversal)
-*   [[allow_without_deny] Allow specified without deny](https://gixy.io/plugins/allow_without_deny)
-*   [[default_server_flag] Missing default_server flag](https://gixy.io/plugins/default_server_flag)
-*   [[error_log_off] `error_log` set to `off`](https://gixy.io/plugins/error_log_off)
-*   [[hash_without_default] Missing default in hash blocks](https://gixy.io/plugins/hash_without_default)
-*   [[host_spoofing] Request's Host header forgery](https://gixy.io/plugins/host_spoofing)
-*   [[http_splitting] HTTP Response Splitting](https://gixy.io/plugins/http_splitting)
-*   [[if_is_evil] If is evil when used in location context](https://gixy.io/plugins/if_is_evil)
-*   [[invalid_regex] Invalid regex capture groups](https://gixy.io/plugins/invalid_regex)
-*   [[low_keepalive_requests] Low `keepalive_requests`](https://gixy.io/plugins/low_keepalive_requests)
-*   [[origins] Problems with referer/origin header validation](https://gixy.io/plugins/origins)
-*   [[proxy_pass_normalized] `proxy_pass` path normalization issues](https://gixy.io/plugins/proxy_pass_normalized)
-*   [[regex_redos] Regular expression denial of service (ReDoS)](https://gixy.io/plugins/regex_redos)
-*   [[resolver_external] Using external DNS nameservers](https://gixy.io/plugins/resolver_external)
-*   [[return_bypasses_allow_deny] Return directive bypasses allow/deny restrictions](https://gixy.io/plugins/return_bypasses_allow_deny)
-*   [[ssrf] Server Side Request Forgery](https://gixy.io/plugins/ssrf)
-*   [[try_files_is_evil_too] `try_files` directive is evil without open_file_cache](https://gixy.io/plugins/try_files_is_evil_too)
-*   [[unanchored_regex] Unanchored regular expressions](https://gixy.io/plugins/unanchored_regex)
-*   [[valid_referers] none in valid_referers](https://gixy.io/plugins/valid_referers)
-*   [[version_disclosure] Using insecure values for server_tokens](https://gixy.io/plugins/version_disclosure)
-*   [[worker_rlimit_nofile_vs_connections] `worker_rlimit_nofile` must be at least twice `worker_connections`](https://gixy.io/plugins/worker_rlimit_nofile_vs_connections)
+*   [[add_header_content_type] Setting Content-Type via add_header](https://gixy.io/plugins/add_header_content_type/)
+*   [[add_header_multiline] Multiline response headers](https://gixy.io/plugins/add_header_multiline/)
+*   [[add_header_redefinition] Redefining of response headers by "add_header" directive](https://gixy.io/plugins/add_header_redefinition/)
+*   [[alias_traversal] Path traversal via misconfigured alias](https://gixy.io/plugins/alias_traversal/)
+*   [[allow_without_deny] Allow specified without deny](https://gixy.io/plugins/allow_without_deny/)
+*   [[default_server_flag] Missing default_server flag](https://gixy.io/plugins/default_server_flag/)
+*   [[error_log_off] `error_log` set to `off`](https://gixy.io/plugins/error_log_off/)
+*   [[hash_without_default] Missing default in hash blocks](https://gixy.io/plugins/hash_without_default/)
+*   [[host_spoofing] Request's Host header forgery](https://gixy.io/plugins/host_spoofing/)
+*   [[http_splitting] HTTP Response Splitting](https://gixy.io/plugins/http_splitting/)
+*   [[if_is_evil] If is evil when used in location context](https://gixy.io/plugins/if_is_evil/)
+*   [[invalid_regex] Invalid regex capture groups](https://gixy.io/plugins/invalid_regex/)
+*   [[low_keepalive_requests] Low `keepalive_requests`](https://gixy.io/plugins/low_keepalive_requests/)
+*   [[origins] Problems with referer/origin header validation](https://gixy.io/plugins/origins/)
+*   [[proxy_pass_normalized] `proxy_pass` path normalization issues](https://gixy.io/plugins/proxy_pass_normalized/)
+*   [[regex_redos] Regular expression denial of service (ReDoS)](https://gixy.io/plugins/regex_redos/)
+*   [[resolver_external] Using external DNS nameservers](https://gixy.io/plugins/resolver_external/)
+*   [[return_bypasses_allow_deny] Return directive bypasses allow/deny restrictions](https://gixy.io/plugins/return_bypasses_allow_deny/)
+*   [[ssrf] Server Side Request Forgery](https://gixy.io/plugins/ssrf/)
+*   [[try_files_is_evil_too] `try_files` directive is evil without open_file_cache](https://gixy.io/plugins/try_files_is_evil_too/)
+*   [[unanchored_regex] Unanchored regular expressions](https://gixy.io/plugins/unanchored_regex/)
+*   [[valid_referers] none in valid_referers](https://gixy.io/plugins/valid_referers/)
+*   [[version_disclosure] Using insecure values for server_tokens](https://gixy.io/plugins/version_disclosure/)
+*   [[worker_rlimit_nofile_vs_connections] `worker_rlimit_nofile` must be at least twice `worker_connections`](https://gixy.io/plugins/worker_rlimit_nofile_vs_connections/)
 
 Something not detected? Please open an [issue](https://github.com/MegaManSec/GixyNG/issues) on GitHub with what's missing!
 
@@ -134,7 +137,7 @@ $ gixy -f json
 [{"config":"\nserver {\n\n\tlocation ~ /v1/((?<action>[^.]*)\\.json)?$ {\n\t\tadd_header X-Action $action;\n\t}\n}","description":"Using variables that can contain \"\\n\" or \"\\r\" may lead to http injection.","file":"/etc/nginx/nginx.conf","line":4,"path":"/etc/nginx/nginx.conf","plugin":"http_splitting","reason":"At least variable \"$action\" can contain \"\\n\"","reference":"https://gixy.io/plugins/http_splitting/","severity":"HIGH","summary":"Possible HTTP-Splitting vulnerability."}]
 ```
 
-More flags for usage can be found by passing `--help` to `gixy`. You can also find more information in the [Usage Guide](https://gixy.io/usage).
+More flags for usage can be found by passing `--help` to `gixy`. You can also find more information in the [Usage Guide](https://gixy.io/usage/).
 
 ## Configuration and plugin options
 
@@ -155,7 +158,7 @@ Contributions to GixyNG are always welcome! You can help us in different ways, s
 - Improving documentation.
 - Fixing, refactoring, improving, and writing new code.
 
-Before submitting any changes in pull requests, please read the contribution guideline document, [Contributing to GixyNG](https://gixy.io/contributing).
+Before submitting any changes in pull requests, please read the contribution guideline document, [Contributing to GixyNG](https://gixy.io/contributing/).
 
 The official homepage of GixyNG is [https://gixy.io/](https://gixy.io/). Any changes to documentation in GixyNG will automatically be reflected on that website.
 

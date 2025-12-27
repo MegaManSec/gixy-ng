@@ -9,7 +9,7 @@ class Plugin(object):
     severity = gixy.severity.UNSPECIFIED
     directives = []
     options = {}
-    
+
     # New flag to indicate plugin supports full config analysis
     supports_full_config = False
 
